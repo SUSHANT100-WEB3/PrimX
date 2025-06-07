@@ -1,8 +1,3 @@
-import Binance from 'binance-api-node';
-
-// Initialize Binance client
-const client = Binance();
-
 export interface CandleData {
   time: string;
   open: number;

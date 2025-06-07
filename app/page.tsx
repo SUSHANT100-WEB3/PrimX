@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   TrendingUp, ChartBar, Brain, Shield, Award, Users, 
-  ArrowRight, Check, Menu, X, Zap, Target, BarChart3 
+  ArrowRight, Check, Menu, X, Zap, Target, BarChart3, ChevronDown 
 } from 'lucide-react';
 import { FaTwitter, FaInstagram, FaLinkedin } from 'react-icons/fa';
 
@@ -79,8 +79,36 @@ export default function LandingPage() {
   ];
 
   const [evaluationType, setEvaluationType] = useState('2-step');
+  const [openFAQ, setOpenFAQ] = useState<number | null>(null);
 
   const currentChallenges = evaluationType === '1-step' ? oneStepChallenges : twoStepChallenges;
+
+  const faqs = [
+    {
+      question: "What is PrimX?",
+      answer: "PrimX is an AI-Powered Trading Journal and Crypto Prop Firm that helps traders analyze their performance and trade with funded capital."
+    },
+    {
+      question: "How do I get funded?",
+      answer: "You can get funded by passing our 1-step or 2-step evaluation challenges. Once you meet the profit targets and adhere to the rules, you'll be eligible for a funded account."
+    },
+    {
+      question: "What is the gain split?",
+      answer: "PrimX offers a gain split of up to 90% for successful traders, meaning you keep most of the profits you generate."
+    },
+    {
+      question: "Are there any recurring fees?",
+      answer: "No, there are no recurring fees. You only pay an evaluation fee once to enter a challenge."
+    },
+    {
+      question: "What markets can I trade?",
+      answer: "Currently, PrimX focuses on crypto trading. We are constantly expanding our offerings."
+    }
+  ];
+
+  const toggleFAQ = (index: number) => {
+    setOpenFAQ(openFAQ === index ? null : index);
+  };
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -403,6 +431,32 @@ export default function LandingPage() {
                 <ArrowRight className="inline-block ml-2 w-5 h-5" />
               </button>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-20 px-6 bg-black">
+        <div className="container mx-auto max-w-4xl">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold text-white">Frequently Asked Questions</h2>
+          </div>
+          <div className="space-y-4">
+            {faqs.map((faq, index) => (
+              <div 
+                key={index} 
+                className="border border-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-900 transition-colors"
+                onClick={() => toggleFAQ(index)}
+              >
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-white">{faq.question}</h3>
+                  <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${openFAQ === index ? 'rotate-180' : ''}`} />
+                </div>
+                {openFAQ === index && (
+                  <p className="text-gray-400 mt-2">{faq.answer}</p>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </section>

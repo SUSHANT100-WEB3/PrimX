@@ -6,7 +6,7 @@ import {
   TrendingUp, ChartBar, Brain, Shield, Award, Users, 
   ArrowRight, Check, Menu, X, Zap, Target, BarChart3 
 } from 'lucide-react';
-import { FaTwitter, FaFacebook, FaInstagram, FaLinkedin } from 'react-icons/fa';
+import { FaTwitter, FaInstagram, FaLinkedin } from 'react-icons/fa';
 
 interface Challenge {
   size: string;
@@ -429,7 +429,6 @@ export default function LandingPage() {
             </p>
             <div className="flex space-x-4">
               <a href="#" className="text-gray-400 hover:text-white transition-colors"><FaTwitter size={24} /></a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors"><FaFacebook size={24} /></a>
               <a href="#" className="text-gray-400 hover:text-white transition-colors"><FaInstagram size={24} /></a>
               <a href="#" className="text-gray-400 hover:text-white transition-colors"><FaLinkedin size={24} /></a>
             </div>

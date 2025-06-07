@@ -7,6 +7,7 @@ import {
   ArrowRight, Check, Menu, X, Zap, Target, BarChart3, ChevronDown 
 } from 'lucide-react';
 import { FaTwitter, FaInstagram, FaLinkedin } from 'react-icons/fa';
+import TradingChart from './components/TradingChart';
 
 interface Challenge {
   size: string;
@@ -80,6 +81,20 @@ export default function LandingPage() {
 
   const [evaluationType, setEvaluationType] = useState('2-step');
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
+
+  // Sample data for the trading chart
+  const chartData = [
+    { time: '2024-01-01', value: 40000 },
+    { time: '2024-01-02', value: 41000 },
+    { time: '2024-01-03', value: 39000 },
+    { time: '2024-01-04', value: 42000 },
+    { time: '2024-01-05', value: 43000 },
+    { time: '2024-01-06', value: 42500 },
+    { time: '2024-01-07', value: 44000 },
+    { time: '2024-01-08', value: 43500 },
+    { time: '2024-01-09', value: 45000 },
+    { time: '2024-01-10', value: 44500 },
+  ];
 
   const currentChallenges = evaluationType === '1-step' ? oneStepChallenges : twoStepChallenges;
 
@@ -282,6 +297,61 @@ export default function LandingPage() {
               >
                 Google Play
               </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trading Chart Section */}
+      <section className="py-20 px-6 bg-gray-900/30">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+              Live Market Analysis
+            </h2>
+            <p className="text-xl text-gray-400">
+              Track market movements with our advanced charting tools
+            </p>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <TradingChart symbol="BTCUSDT" interval="1h" />
+            </div>
+            <div className="space-y-6">
+              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6">
+                <h3 className="text-xl font-semibold mb-4">Moving Averages</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 bg-[#2962FF] rounded-full"></div>
+                    <span className="text-gray-300">SMA 20</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 bg-[#FF6B6B] rounded-full"></div>
+                    <span className="text-gray-300">SMA 50</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 bg-[#4CAF50] rounded-full"></div>
+                    <span className="text-gray-300">SMA 200</span>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6">
+                <h3 className="text-xl font-semibold mb-4">Market Overview</h3>
+                <div className="space-y-4">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">24h Volume</span>
+                    <span className="text-white">$2.4B</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Market Cap</span>
+                    <span className="text-white">$45.2B</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">24h Change</span>
+                    <span className="text-green-400">+2.4%</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

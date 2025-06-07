@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { createChart, ColorType, IChartApi, CandlestickSeries } from 'lightweight-charts';
+import { createChart, ColorType, IChartApi, CandlestickSeries, LineSeries } from 'lightweight-charts';
 import { getCandleData, getMarketData, CandleData } from '../services/binanceService';
 
 interface TradingChartProps {
@@ -44,21 +44,21 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h' }: Tr
     });
 
     // Add 20-period SMA
-    const sma20Series = chart.addLineSeries({
+    const sma20Series = chart.addSeries(LineSeries, {
       color: '#2962FF',
       lineWidth: 2,
       title: 'SMA 20',
     });
 
     // Add 50-period SMA
-    const sma50Series = chart.addLineSeries({
+    const sma50Series = chart.addSeries(LineSeries, {
       color: '#FF6B6B',
       lineWidth: 2,
       title: 'SMA 50',
     });
 
     // Add 200-period SMA
-    const sma200Series = chart.addLineSeries({
+    const sma200Series = chart.addSeries(LineSeries, {
       color: '#4CAF50',
       lineWidth: 2,
       title: 'SMA 200',

@@ -24,7 +24,7 @@ export async function getCandleData(symbol: string, interval: string): Promise<C
     const data = await response.json();
 
     return data.map((candle: any[]) => ({
-      time: new Date(candle[0]).toISOString(),
+      time: Math.floor(candle[0] / 1000),
       open: parseFloat(candle[1]),
       high: parseFloat(candle[2]),
       low: parseFloat(candle[3]),

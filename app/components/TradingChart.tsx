@@ -100,7 +100,7 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h' }: Tr
     fetchData();
 
     // Set up periodic updates
-    const updateInterval = setInterval(fetchData, 60000); // Update every minute
+    const updateInterval = setInterval(fetchData, 1000); // Update every 1 second
 
     // Handle resize
     const handleResize = () => {

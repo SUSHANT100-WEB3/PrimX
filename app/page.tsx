@@ -6,6 +6,7 @@ import {
   TrendingUp, ChartBar, Brain, Shield, Award, Users, 
   ArrowRight, Check, Menu, X, Zap, Target, BarChart3 
 } from 'lucide-react';
+import { FaTwitter, FaFacebook, FaInstagram, FaLinkedin } from 'react-icons/fa';
 
 interface Challenge {
   size: string;
@@ -232,6 +233,32 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Cutting-Edge Technology Section */}
+      <section className="py-20 px-6 bg-black">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center space-y-6">
+            <h2 className="text-5xl md:text-6xl font-bold text-white">
+              Cutting-Edge Technology
+            </h2>
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+              Our custom web and mobile apps are built for fast and seamless trade execution. Our robust trading environment and modern trading terminals combine to create a smooth trading experience on your platform of choice.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+              <button 
+                className="px-8 py-4 bg-gray-800 text-white font-semibold rounded-lg hover:bg-gray-700 transition-all duration-200"
+              >
+                App Store
+              </button>
+              <button 
+                className="px-8 py-4 bg-gray-800 text-white font-semibold rounded-lg hover:bg-gray-700 transition-all duration-200"
+              >
+                Google Play
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Challenges Section */}
       <section id="challenges" className="py-20 px-6 bg-gray-900/30">
         <div className="container mx-auto max-w-6xl">
@@ -400,6 +427,12 @@ export default function LandingPage() {
             <p className="text-sm text-gray-400">
               All Rights Reserved PrimX © 2025
             </p>
+            <div className="flex space-x-4">
+              <a href="#" className="text-gray-400 hover:text-white transition-colors"><FaTwitter size={24} /></a>
+              <a href="#" className="text-gray-400 hover:text-white transition-colors"><FaFacebook size={24} /></a>
+              <a href="#" className="text-gray-400 hover:text-white transition-colors"><FaInstagram size={24} /></a>
+              <a href="#" className="text-gray-400 hover:text-white transition-colors"><FaLinkedin size={24} /></a>
+            </div>
           </div>
         </div>
       </footer>

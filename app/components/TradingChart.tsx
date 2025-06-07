@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { createChart, ColorType, IChartApi } from 'lightweight-charts';
+import { createChart, ColorType, IChartApi, CandlestickSeries } from 'lightweight-charts';
 import { getCandleData, getMarketData, CandleData } from '../services/binanceService';
 
 interface TradingChartProps {
@@ -35,7 +35,7 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h' }: Tr
       height: 400,
     });
 
-    const candlestickSeries = chart.addCandlestickSeries({
+    const candlestickSeries = chart.addSeries(CandlestickSeries, {
       upColor: '#26a69a',
       downColor: '#ef5350',
       borderVisible: false,

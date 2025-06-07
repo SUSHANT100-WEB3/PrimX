@@ -135,7 +135,7 @@ export default function LandingPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                <img src="/primx-logo.jpg" alt="PRIMX Logo" className="w-6 h-6 text-black" />
+                <img src="/primx-logo.jpg" alt="PRIMX Logo" className="w-6 h-6 text-black object-contain" />
               </div>
               <span className="text-2xl font-bold">PRIMX</span>
             </div>
@@ -537,7 +537,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                <img src="/primx-logo.jpg" alt="PRIMX Logo" className="w-5 h-5 text-black" />
+                <img src="/primx-logo.jpg" alt="PRIMX Logo" className="w-5 h-5 text-black object-contain" />
               </div>
               <span className="text-xl font-bold">PRIMX</span>
             </div>

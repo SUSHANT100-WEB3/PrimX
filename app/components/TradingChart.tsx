@@ -131,18 +131,39 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
         const sma50Data = calculateSMA(candleData, 50);
         const sma200Data = calculateSMA(candleData, 200);
 
+        const formattedCandleData = candleData.map(candle => ({
+          time: new Date(candle.time * 1000).toISOString().split('T')[0],
+          open: candle.open,
+          high: candle.high,
+          low: candle.low,
+          close: candle.close,
+        }));
+
         // Format volume data
         const volumeData = candleData.map(candle => ({
-          time: candle.time,
+          time: new Date(candle.time * 1000).toISOString().split('T')[0],
           value: candle.volume,
           color: candle.close >= candle.open ? '#26a69a' : '#ef5350',
         }));
 
-        candlestickSeries.setData(candleData);
+        const formattedSma20Data = sma20Data.map(item => ({
+          time: new Date(item.time * 1000).toISOString().split('T')[0],
+          value: item.value
+        }));
+        const formattedSma50Data = sma50Data.map(item => ({
+          time: new Date(item.time * 1000).toISOString().split('T')[0],
+          value: item.value
+        }));
+        const formattedSma200Data = sma200Data.map(item => ({
+          time: new Date(item.time * 1000).toISOString().split('T')[0],
+          value: item.value
+        }));
+
+        candlestickSeries.setData(formattedCandleData);
         volumeSeries.setData(volumeData);
-        sma20Series.setData(sma20Data);
-        sma50Series.setData(sma50Data);
-        sma200Series.setData(sma200Data);
+        sma20Series.setData(formattedSma20Data);
+        sma50Series.setData(formattedSma50Data);
+        sma200Series.setData(formattedSma200Data);
 
         // Fit content
         chart.timeScale().fitContent();

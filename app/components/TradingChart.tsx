@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createChart, ColorType, IChartApi, CandlestickSeries, LineSeries, HistogramSeries } from 'lightweight-charts';
-import { getCandleData, getMarketData, CandleData } from '../services/binanceService';
+import { getCandleData, getMarketData, CandleData, MarketData } from '../services/binanceService';
 
 interface TradingChartProps {
   symbol?: string;
   interval?: string;
+  onMarketStatsUpdate?: (marketData: MarketData) => void;
 }
 
 const INTERVALS = [
@@ -18,20 +19,19 @@ const INTERVALS = [
   { label: '1d', value: '1d' },
 ];
 
-export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h' }: TradingChartProps) {
+export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMarketStatsUpdate }: TradingChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const [selectedInterval, setSelectedInterval] = useState(interval);
-  const [marketData, setMarketData] = useState({
-    price: 0,
-    volume24h: 0,
-    priceChange24h: 0,
-    priceChangePercent24h: 0
-  });
 
   useEffect(() => {
-    if (!chartContainerRef.current) return;
+    console.log("TradingChart: useEffect triggered");
+    if (!chartContainerRef.current) {
+      console.log("TradingChart: chartContainerRef.current is null");
+      return;
+    }
 
+    console.log("TradingChart: Initializing chart");
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: '#1a1a1a' },
@@ -116,12 +116,17 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h' }: Tr
 
     // Fetch and update data
     const fetchData = async () => {
+      console.log("TradingChart: Fetching data for symbol", symbol, "and interval", selectedInterval);
       const candleData = await getCandleData(symbol, selectedInterval);
       const marketStats = await getMarketData(symbol);
       
-      setMarketData(marketStats);
+      // Call the callback with the latest price
+      if (onMarketStatsUpdate) {
+        onMarketStatsUpdate(marketStats);
+      }
       
       if (candleData.length > 0) {
+        console.log("TradingChart: Data received, setting chart data");
         const sma20Data = calculateSMA(candleData, 20);
         const sma50Data = calculateSMA(candleData, 50);
         const sma200Data = calculateSMA(candleData, 200);
@@ -141,6 +146,8 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h' }: Tr
 
         // Fit content
         chart.timeScale().fitContent();
+      } else {
+        console.log("TradingChart: No candle data received.");
       }
     };
 
@@ -152,9 +159,11 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h' }: Tr
 
     // Handle resize
     const handleResize = () => {
+      console.log("TradingChart: Resizing chart");
       if (chartContainerRef.current) {
         chart.applyOptions({
           width: chartContainerRef.current.clientWidth,
+          height: chartContainerRef.current.clientHeight,
         });
       }
     };
@@ -167,17 +176,13 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h' }: Tr
       clearInterval(updateInterval);
       chart.remove();
     };
-  }, [symbol, selectedInterval]);
+  }, [symbol, selectedInterval, onMarketStatsUpdate]);
 
   return (
     <div className="w-full h-full bg-[#1a1a1a] rounded-lg p-4">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
           <span className="text-2xl font-bold text-white">{symbol}</span>
-          <span className="text-lg text-gray-400">${marketData.price.toLocaleString()}</span>
-          <span className={`text-sm ${marketData.priceChangePercent24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-            {marketData.priceChangePercent24h >= 0 ? '+' : ''}{marketData.priceChangePercent24h.toFixed(2)}%
-          </span>
         </div>
         <div className="flex space-x-2">
           {INTERVALS.map(({ label, value }) => (
@@ -195,7 +200,7 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h' }: Tr
           ))}
         </div>
       </div>
-      <div ref={chartContainerRef} className="w-full h-[600px]" />
+      <div ref={chartContainerRef} className="w-full h-full" />
     </div>
   );
 } 

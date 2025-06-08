@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -8,6 +8,9 @@ import {
 } from 'lucide-react';
 import { FaTwitter, FaInstagram, FaLinkedin } from 'react-icons/fa';
 import TradingChart from './components/TradingChart';
+import { getCandleData, CandleData, MarketData } from './services/binanceService';
+import { calculateRSI, calculateSMA, calculateBollingerBands } from './services/taService';
+import "./globals.css";
 
 interface Challenge {
   size: string;
@@ -24,6 +27,18 @@ export default function LandingPage() {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [selectedTab, setSelectedTab] = useState('chart'); // 'chart' or 'indicators'
+  const [rsi7, setRsi7] = useState<number | null>(null);
+  const [rsi14, setRsi14] = useState<number | null>(null);
+  const [rsi25, setRsi25] = useState<number | null>(null);
+  const [sma5, setSma5] = useState<number | null>(null);
+  const [sma20, setSma20] = useState<number | null>(null);
+  const [sma100, setSma100] = useState<number | null>(null);
+  const [bbUpper, setBbUpper] = useState<number | null>(null);
+  const [bbMiddle, setBbMiddle] = useState<number | null>(null);
+  const [bbLower, setBbLower] = useState<number | null>(null);
+  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+  const [marketData, setMarketData] = useState<MarketData | null>(null); // New state for market data
 
   useEffect(() => {
     const handleScroll = () => {
@@ -31,6 +46,39 @@ export default function LandingPage() {
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const fetchAndCalculateIndicators = async () => {
+      const candleData: CandleData[] = await getCandleData('BTCUSDT', '1d'); // Fetch daily candle data
+
+      if (candleData.length > 0) {
+        const latestClosePrice = candleData[candleData.length - 1].close;
+        setCurrentPrice(latestClosePrice);
+
+        const rsi7Data = calculateRSI(candleData, 7);
+        const rsi14Data = calculateRSI(candleData, 14);
+        const rsi25Data = calculateRSI(candleData, 25);
+        const sma5Data = calculateSMA(candleData, 5);
+        const sma20Data = calculateSMA(candleData, 20);
+        const sma100Data = calculateSMA(candleData, 100);
+        const bbData = calculateBollingerBands(candleData, 20);
+
+        setRsi7(rsi7Data.length > 0 ? rsi7Data[rsi7Data.length - 1].value : null);
+        setRsi14(rsi14Data.length > 0 ? rsi14Data[rsi14Data.length - 1].value : null);
+        setRsi25(rsi25Data.length > 0 ? rsi25Data[rsi25Data.length - 1].value : null);
+        setSma5(sma5Data.length > 0 ? sma5Data[sma5Data.length - 1].value : null);
+        setSma20(sma20Data.length > 0 ? sma20Data[sma20Data.length - 1].value : null);
+        setSma100(sma100Data.length > 0 ? sma100Data[sma100Data.length - 1].value : null);
+        setBbUpper(bbData.upper.length > 0 ? bbData.upper[bbData.upper.length - 1].value : null);
+        setBbMiddle(bbData.middle.length > 0 ? bbData.middle[bbData.middle.length - 1].value : null);
+        setBbLower(bbData.lower.length > 0 ? bbData.lower[bbData.lower.length - 1].value : null);
+      }
+    };
+
+    fetchAndCalculateIndicators();
+    const indicatorUpdateInterval = setInterval(fetchAndCalculateIndicators, 30000); // Update every 30 seconds
+    return () => clearInterval(indicatorUpdateInterval);
   }, []);
 
   const stats = [
@@ -116,13 +164,41 @@ export default function LandingPage() {
       answer: "No, there are no recurring fees. You only pay an evaluation fee once to enter a challenge."
     },
     {
-      question: "What markets can I trade?",
+      question: "What markets can I trade? ",
       answer: "Currently, PrimX focuses on crypto trading. We are constantly expanding our offerings."
     }
   ];
 
   const toggleFAQ = (index: number) => {
     setOpenFAQ(openFAQ === index ? null : index);
+  };
+
+  const getRSIInterpretation = (rsi: number | null) => {
+    if (rsi === null) return 'N/A';
+    if (rsi < 30) return 'Oversold (Bullish)';
+    if (rsi > 70) return 'Overbought (Bearish)';
+    return 'Neutral';
+  };
+
+  const getSMABollingerInterpretation = (indicatorValue: number | null, type: 'SMA' | 'LowerBBand') => {
+    if (indicatorValue === null || currentPrice === null) return 'N/A';
+
+    if (type === 'SMA') {
+      if (currentPrice > indicatorValue) return 'Bullish';
+      if (currentPrice < indicatorValue) return 'Bearish';
+      return 'Neutral'; // If equal
+    } else if (type === 'LowerBBand') {
+      if (currentPrice > indicatorValue) return 'Bullish'; // Price above lower band is bullish
+      return 'Neutral'; // If price is below or equal to lower band, it's neutral, as per defilens.ai's simplified display for bullish only
+    }
+    return 'Neutral';
+  };
+
+  // New helper function for SMA percentage difference
+  const getSMADifferencePercentage = (smaValue: number | null) => {
+    if (smaValue === null || currentPrice === null) return 'N/A';
+    const diff = ((currentPrice - smaValue) / smaValue) * 100;
+    return `${diff >= 0 ? '+' : ''}${diff.toFixed(2)}%`;
   };
 
   return (
@@ -145,13 +221,13 @@ export default function LandingPage() {
               <a href="#features" className="text-gray-300 hover:text-white transition-colors">Features</a>
               <a href="#challenges" className="text-gray-300 hover:text-white transition-colors">Challenges</a>
               <a href="#stats" className="text-gray-300 hover:text-white transition-colors">Community</a>
-              <button 
+              <button
                 onClick={() => router.push('/auth')}
                 className="text-gray-300 hover:text-white transition-colors"
               >
                 Login
               </button>
-              <button 
+              <button
                 onClick={() => router.push('/auth')}
                 className="px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-black font-semibold rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-200"
               >
@@ -160,7 +236,7 @@ export default function LandingPage() {
             </div>
 
             {/* Mobile Menu Button */}
-            <button 
+            <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden"
             >
@@ -173,18 +249,18 @@ export default function LandingPage() {
         {isMenuOpen && (
           <div className="md:hidden bg-gray-900 border-t border-gray-800">
             <div className="container mx-auto px-6 py-4 space-y-4">
-              <a href="#features" className="block text-gray-300 hover:text-white">Features</a>
-              <a href="#challenges" className="block text-gray-300 hover:text-white">Challenges</a>
-              <a href="#stats" className="block text-gray-300 hover:text-white">Community</a>
-              <button 
-                onClick={() => router.push('/auth')}
-                className="block text-gray-300 hover:text-white"
+              <a onClick={() => setIsMenuOpen(false)} href="#features" className="block text-gray-300 hover:text-white transition-colors">Features</a>
+              <a onClick={() => setIsMenuOpen(false)} href="#challenges" className="block text-gray-300 hover:text-white transition-colors">Challenges</a>
+              <a onClick={() => setIsMenuOpen(false)} href="#stats" className="block text-gray-300 hover:text-white transition-colors">Community</a>
+              <button
+                onClick={() => { router.push('/auth'); setIsMenuOpen(false); }}
+                className="block text-gray-300 hover:text-white transition-colors w-full text-left"
               >
                 Login
               </button>
-              <button 
-                onClick={() => router.push('/auth')}
-                className="w-full px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-black font-semibold rounded-lg"
+              <button
+                onClick={() => { router.push('/auth'); setIsMenuOpen(false); }}
+                className="w-full px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-black font-semibold rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-200 text-left"
               >
                 Start Challenge
               </button>
@@ -194,336 +270,279 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-6">
-        <div className="container mx-auto max-w-6xl">
-          <div className="text-center space-y-6">
-            <div className="inline-flex items-center px-4 py-2 bg-green-500/10 border border-green-500/30 rounded-full text-green-400 text-sm font-medium mb-4">
-              <Zap className="w-4 h-4 mr-2" />
-              AI-Powered Trading Journal + Crypto Prop Firm
-            </div>
-            
-            <h1 className="text-5xl md:text-7xl font-bold">
-              Trade Smarter.
-              <br />
-              <span className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-                Get Funded.
-              </span>
-            </h1>
-            
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Analyze your trades with AI, improve your performance, and trade with up to $200K in funded capital.
+      <header className="relative pt-32 pb-20 md:pt-48 md:pb-32 flex items-center justify-center text-center overflow-hidden">
+        <div className="absolute inset-0 z-0 opacity-10">
+          {/* Background pattern */}
+          <div className="absolute inset-0 bg-grid-pattern opacity-20"></div>
+          {/* Green-blue gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-green-600/20 to-emerald-800/20 via-transparent"></div>
+        </div>
+        <div className="relative z-10 container mx-auto px-6">
+          <p className="text-xl md:text-2xl font-semibold text-green-400 mb-8 flex items-center justify-center text-center">
+              <Zap className="w-6 h-6 mr-2" /> Flawless Execution, Unmatched Alpha
             </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <button 
-                onClick={() => router.push('/auth')}
-                className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-black font-semibold rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-200 transform hover:scale-105"
-              >
-                Start Free Trial
-                <ArrowRight className="inline-block ml-2 w-5 h-5" />
-              </button>
-              <button 
-                className="px-8 py-4 bg-gray-900 border border-gray-800 rounded-lg hover:border-gray-700 transition-all duration-200"
-              >
-                View Demo
-              </button>
-            </div>
+          <h1 className="text-5xl md:text-7xl font-extrabold leading-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
+            Trade Smarter.<br /><span className="bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-emerald-400">Get Funded.</span>
+          </h1>
+          <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto mb-10">
+            Analyze your trades with AI, improve your performance, and trade with up to $200K in funded capital.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+            <button
+              onClick={() => router.push('/auth')}
+              className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-black font-bold rounded-lg shadow-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 flex items-center justify-center text-lg"
+            >
+              Start Free Trial <ArrowRight className="ml-2 w-5 h-5" />
+            </button>
+            <button
+              onClick={() => { /* Implement demo view logic */ }}
+              className="px-8 py-3 bg-gray-800 text-gray-200 font-semibold rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-300 flex items-center justify-center text-lg"
+            >
+              View Demo
+            </button>
           </div>
         </div>
-      </section>
+      </header>
 
-      {/* Stats Section */}
-      <section id="stats" className="py-20 px-6 border-y border-gray-900">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-                  {stat.value}
-                </p>
-                <p className="text-gray-400 mt-2">{stat.label}</p>
+      {/* Chart Section */}
+      <section className="py-20 bg-gray-950">
+        <div className="container mx-auto px-6">
+          <h2 className="text-4xl font-bold text-center mb-12 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
+            Real-time Market Insights
+          </h2>
+          <div className="bg-gray-900 rounded-lg shadow-xl p-6 md:p-10 border border-gray-800">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 space-y-4 md:space-y-0">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10">
+                  <img src="/bitcoin.png" alt="Bitcoin Logo" className="w-full h-full object-contain" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold">Bitcoin <span className="text-gray-400">/ USDT</span></h3>
+                  <p className="text-green-500 text-lg">Live Price: ${currentPrice ? currentPrice.toFixed(2) : 'Loading...'}</p>
+                </div>
               </div>
-            ))}
+              <div className="flex space-x-4">
+                <button
+                  onClick={() => setSelectedTab('chart')}
+                  className={`px-5 py-2 rounded-lg font-semibold transition-colors duration-200 ${
+                    selectedTab === 'chart' ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  Chart
+                </button>
+                <button
+                  onClick={() => setSelectedTab('indicators')}
+                  className={`px-5 py-2 rounded-lg font-semibold transition-colors duration-200 ${
+                    selectedTab === 'indicators' ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  Indicators
+                </button>
+              </div>
+            </div>
+
+            {selectedTab === 'chart' && (
+              <div className="h-[500px] w-full">
+                <TradingChart />
+              </div>
+            )}
+
+            {selectedTab === 'indicators' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                  <h4 className="text-xl font-bold mb-4 text-green-400">Relative Strength Index (RSI)</h4>
+                  <div className="space-y-3 text-gray-300">
+                    <p>RSI (7): <span className="font-semibold">{rsi7 !== null ? rsi7.toFixed(2) : 'N/A'}</span> (<span className={`${getRSIInterpretation(rsi7) === 'Oversold (Bullish)' ? 'text-green-500' : getRSIInterpretation(rsi7) === 'Overbought (Bearish)' ? 'text-red-500' : 'text-gray-400'}`}>{getRSIInterpretation(rsi7)}</span>)</p>
+                    <p>RSI (14): <span className="font-semibold">{rsi14 !== null ? rsi14.toFixed(2) : 'N/A'}</span> (<span className={`${getRSIInterpretation(rsi14) === 'Oversold (Bullish)' ? 'text-green-500' : getRSIInterpretation(rsi14) === 'Overbought (Bearish)' ? 'text-red-500' : 'text-gray-400'}`}>{getRSIInterpretation(rsi14)}</span>)</p>
+                    <p>RSI (25): <span className="font-semibold">{rsi25 !== null ? rsi25.toFixed(2) : 'N/A'}</span> (<span className={`${getRSIInterpretation(rsi25) === 'Oversold (Bullish)' ? 'text-green-500' : getRSIInterpretation(rsi25) === 'Overbought (Bearish)' ? 'text-red-500' : 'text-gray-400'}`}>{getRSIInterpretation(rsi25)}</span>)</p>
+                  </div>
+                </div>
+                <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                  <h4 className="text-xl font-bold mb-4 text-green-400">Simple Moving Averages (SMA)</h4>
+                  <div className="space-y-3 text-gray-300">
+                    <p>SMA (5): <span className="font-semibold">{sma5 !== null ? sma5.toFixed(2) : 'N/A'}</span> (<span className={`${getSMABollingerInterpretation(sma5, 'SMA') === 'Bullish' ? 'text-green-500' : 'text-red-500'}`}>{getSMABollingerInterpretation(sma5, 'SMA')} {getSMADifferencePercentage(sma5)}</span>)</p>
+                    <p>SMA (20): <span className="font-semibold">{sma20 !== null ? sma20.toFixed(2) : 'N/A'}</span> (<span className={`${getSMABollingerInterpretation(sma20, 'SMA') === 'Bullish' ? 'text-green-500' : 'text-red-500'}`}>{getSMABollingerInterpretation(sma20, 'SMA')} {getSMADifferencePercentage(sma20)}</span>)</p>
+                    <p>SMA (100): <span className="font-semibold">{sma100 !== null ? sma100.toFixed(2) : 'N/A'}</span> (<span className={`${getSMABollingerInterpretation(sma100, 'SMA') === 'Bullish' ? 'text-green-500' : 'text-red-500'}`}>{getSMABollingerInterpretation(sma100, 'SMA')} {getSMADifferencePercentage(sma100)}</span>)</p>
+                  </div>
+                </div>
+                <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                  <h4 className="text-xl font-bold mb-4 text-green-400">Bollinger Bands (BB)</h4>
+                  <div className="space-y-3 text-gray-300">
+                    <p>Upper Band: <span className="font-semibold">{bbUpper !== null ? bbUpper.toFixed(2) : 'N/A'}</span></p>
+                    <p>Middle Band: <span className="font-semibold">{bbMiddle !== null ? bbMiddle.toFixed(2) : 'N/A'}</span></p>
+                    <p>Lower Band: <span className="font-semibold">{bbLower !== null ? bbLower.toFixed(2) : 'N/A'}</span> (<span className={`${getSMABollingerInterpretation(bbLower, 'LowerBBand') === 'Bullish' ? 'text-green-500' : 'text-gray-400'}`}>{getSMABollingerInterpretation(bbLower, 'LowerBBand')}</span>)</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 px-6">
-        <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Everything You Need to
-              <span className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent"> Succeed</span>
-            </h2>
-            <p className="text-xl text-gray-400">
-              Professional tools meet AI intelligence
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <section id="features" className="py-20 bg-black">
+        <div className="container mx-auto px-6">
+          <h2 className="text-4xl font-bold text-center mb-16 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
+            Unleash Your Trading Edge with AI
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
             {features.map((feature, index) => (
-              <div 
-                key={index}
-                className="p-6 bg-gray-900/50 border border-gray-800 rounded-xl hover:border-green-500/50 transition-all duration-300"
-              >
-                <feature.icon className="w-12 h-12 text-green-400 mb-4" />
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-gray-400">{feature.description}</p>
+              <div key={index} className="bg-gray-900 rounded-lg p-8 text-center border border-gray-800 shadow-lg transform hover:scale-105 transition-transform duration-300">
+                <div className="p-4 bg-green-600/20 rounded-full inline-flex mb-6">
+                  <feature.icon className="w-8 h-8 text-green-400" />
+                </div>
+                <h3 className="text-xl font-bold mb-4 text-white">{feature.title}</h3>
+                <p className="text-gray-300">{feature.description}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Cutting-Edge Technology Section */}
-      <section className="py-20 px-6 bg-black">
-        <div className="container mx-auto max-w-6xl">
-          <div className="text-center space-y-6">
-            <h2 className="text-5xl md:text-6xl font-bold text-white">
-              Cutting-Edge Technology
-            </h2>
-            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-              Our custom web and mobile apps are built for fast and seamless trade execution. Our robust trading environment and modern trading terminals combine to create a smooth trading experience on your platform of choice.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <button 
-                className="px-8 py-4 bg-gray-800 text-white font-semibold rounded-lg hover:bg-gray-700 transition-all duration-200"
-              >
-                App Store
-              </button>
-              <button 
-                className="px-8 py-4 bg-gray-800 text-white font-semibold rounded-lg hover:bg-gray-700 transition-all duration-200"
-              >
-                Google Play
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Trading Chart Section */}
-      <section className="py-20 px-6 bg-gray-900/30">
-        <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Live Market Analysis
-            </h2>
-            <p className="text-xl text-gray-400">
-              Track market movements with our advanced charting tools
-            </p>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              <TradingChart symbol="BTCUSDT" interval="1h" />
-            </div>
-            <div className="space-y-6">
-              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6">
-                <h3 className="text-xl font-semibold mb-4">Moving Averages</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-[#2962FF] rounded-full"></div>
-                    <span className="text-gray-300">SMA 20</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-[#FF6B6B] rounded-full"></div>
-                    <span className="text-gray-300">SMA 50</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-[#4CAF50] rounded-full"></div>
-                    <span className="text-gray-300">SMA 200</span>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6">
-                <h3 className="text-xl font-semibold mb-4">Market Overview</h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">24h Volume</span>
-                    <span className="text-white">$2.4B</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Market Cap</span>
-                    <span className="text-white">$45.2B</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">24h Change</span>
-                    <span className="text-green-400">+2.4%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
 
       {/* Challenges Section */}
-      <section id="challenges" className="py-20 px-6 bg-gray-900/30">
-        <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-10">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">Choose Your Evaluation</h2>
-            <p className="text-xl text-gray-400 mb-8">
-              Start with a free trial, then scale up to $200K
-            </p>
+      <section id="challenges" className="py-20 bg-gray-950">
+        <div className="container mx-auto px-6">
+          <h2 className="text-4xl font-bold text-center mb-12 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
+            Proprietary Trading Challenges
+          </h2>
+          <p className="text-lg text-gray-300 text-center mb-10 max-w-3xl mx-auto">
+            Choose from our 1-step or 2-step evaluation challenges to prove your trading prowess and get access to significant funded capital.
+          </p>
 
-            <div className="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-8 mb-10">
-              <div className="flex items-center space-x-4">
-                <span className="text-gray-400">Market Type:</span>
-                <button className="px-4 py-2 bg-gray-700 text-white rounded-md cursor-not-allowed opacity-70">Crypto</button>
-              </div>
-              <div className="flex items-center space-x-4">
-                <span className="text-gray-400">Evaluation Type:</span>
-                <div className="flex bg-gray-800 rounded-md p-1">
-                  <button 
-                    onClick={() => setEvaluationType('1-step')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium ${evaluationType === '1-step' ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-black' : 'text-gray-300 hover:text-white'}`}
-                  >
-                    1-step
-                  </button>
-                  <button 
-                    onClick={() => setEvaluationType('2-step')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium ${evaluationType === '2-step' ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-black' : 'text-gray-300 hover:text-white'}`}
-                  >
-                    2-step
-                  </button>
-                </div>
-              </div>
-            </div>
+          <div className="flex justify-center mb-10 space-x-4">
+            <button
+              onClick={() => setEvaluationType('1-step')}
+              className={`px-6 py-3 rounded-full font-semibold text-lg transition-all duration-300 ${
+                evaluationType === '1-step'
+                  ? 'bg-green-600 text-white shadow-lg'
+                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+              }`}
+            >
+              1-Step Challenges
+            </button>
+            <button
+              onClick={() => setEvaluationType('2-step')}
+              className={`px-6 py-3 rounded-full font-semibold text-lg transition-all duration-300 ${
+                evaluationType === '2-step'
+                  ? 'bg-green-600 text-white shadow-lg'
+                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+              }`}
+            >
+              2-Step Challenges
+            </button>
           </div>
 
-          <div className="overflow-x-auto rounded-lg shadow-xl">
-            <table className="w-full text-left bg-black border-collapse">
+          <div className="overflow-x-auto mb-16">
+            <table className="min-w-full bg-gray-900 rounded-lg shadow-xl border border-gray-800">
               <thead>
-                <tr className="bg-gray-800/70">
-                  <th className="p-4 text-gray-300">Account size</th>
-                  {currentChallenges.map((challenge, index) => (
-                    <th key={index} className="p-4 text-white font-semibold">{challenge.size}</th>
-                  ))}
+                <tr className="bg-gray-800 text-gray-300 text-left">
+                  <th className="py-4 px-6">Account Size</th>
+                  <th className="py-4 px-6">Gain Split</th>
+                  <th className="py-4 px-6">Step 1 Goal</th>
+                  {evaluationType === '2-step' && <th className="py-4 px-6">Step 2 Goal</th>}
+                  <th className="py-4 px-6">Max Daily Loss</th>
+                  <th className="py-4 px-6">Max Drawdown</th>
+                  <th className="py-4 px-6">Leverage</th>
+                  <th className="py-4 px-6">Evaluation Fee</th>
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-t border-gray-800">
-                  <td className="p-4 text-gray-400">Gain split</td>
-                  {currentChallenges.map((challenge, index) => (
-                    <td key={index} className="p-4 text-white">{challenge.gainSplit}</td>
-                  ))}
-                </tr>
-                <tr className="border-t border-gray-800">
-                  <td className="p-4 text-gray-400">Step 1 goal</td>
-                  {currentChallenges.map((challenge, index) => (
-                    <td key={index} className="p-4 text-white">{challenge.step1Goal}</td>
-                  ))}
-                </tr>
-                {evaluationType === '2-step' && (
-                  <tr className="border-t border-gray-800">
-                    <td className="p-4 text-gray-400">Step 2 goal</td>
-                    {currentChallenges.map((challenge, index) => (
-                      <td key={index} className="p-4 text-white">{challenge.step2Goal}</td>
-                    ))}
+                {currentChallenges.map((challenge, index) => (
+                  <tr key={index} className="border-b border-gray-800 last:border-b-0 hover:bg-gray-850 transition-colors duration-200">
+                    <td className="py-4 px-6 font-semibold text-white">{challenge.size}</td>
+                    <td className="py-4 px-6 text-green-400">{challenge.gainSplit}</td>
+                    <td className="py-4 px-6">{challenge.step1Goal}</td>
+                    {evaluationType === '2-step' && <td className="py-4 px-6">{challenge.step2Goal}</td>}
+                    <td className="py-4 px-6 text-red-400">{challenge.maxDailyLoss}</td>
+                    <td className="py-4 px-6 text-red-400">{challenge.maxDrawdown}</td>
+                    <td className="py-4 px-6">{challenge.leverage}</td>
+                    <td className="py-4 px-6 font-semibold text-green-400">{challenge.evaluationFee}</td>
                   </tr>
-                )}
-                <tr className="border-t border-gray-800">
-                  <td className="p-4 text-gray-400">Max. daily loss</td>
-                  {currentChallenges.map((challenge, index) => (
-                    <td key={index} className="p-4 text-white">{challenge.maxDailyLoss}</td>
-                  ))}
-                </tr>
-                <tr className="border-t border-gray-800">
-                  <td className="p-4 text-gray-400">Max. drawdown</td>
-                  {currentChallenges.map((challenge, index) => (
-                    <td key={index} className="p-4 text-white">{challenge.maxDrawdown}</td>
-                  ))}
-                </tr>
-                <tr className="border-t border-gray-800">
-                  <td className="p-4 text-gray-400">Leverage</td>
-                  {currentChallenges.map((challenge, index) => (
-                    <td key={index} className="p-4 text-white">{challenge.leverage}</td>
-                  ))}
-                </tr>
-                <tr className="border-t border-gray-800">
-                  <td className="p-4 text-gray-400">Evaluation fee</td>
-                  {currentChallenges.map((challenge, index) => (
-                    <td key={index} className="p-4 text-green-400 font-semibold">{challenge.evaluationFee}</td>
-                  ))}
-                </tr>
+                ))}
               </tbody>
             </table>
           </div>
 
-          <div className="text-center mt-12">
+          <div className="text-center">
             <button
               onClick={() => router.push('/auth')}
-              className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-black font-semibold rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-200 transform hover:scale-105"
+              className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-black font-bold rounded-lg shadow-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 flex items-center justify-center mx-auto text-lg"
             >
-              Buy now
+              Get Funded Today! <ArrowRight className="ml-2 w-5 h-5" />
             </button>
           </div>
         </div>
       </section>
 
-      {/* Prime Member Section */}
-      <section className="py-20 px-6">
-        <div className="container mx-auto max-w-4xl">
-          <div className="bg-gradient-to-r from-green-900/20 to-emerald-900/20 border border-green-800/50 rounded-2xl p-8 md:p-12">
-            <div className="text-center space-y-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full mb-4">
-                <Award className="w-8 h-8 text-black" />
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold">Become a Prime Member</h2>
-              <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-                Unlock exclusive features and maximize your trading potential
-              </p>
-              
-              <div className="grid md:grid-cols-2 gap-4 text-left max-w-2xl mx-auto pt-4">
-                <div className="flex items-start space-x-3">
-                  <Check className="w-5 h-5 text-green-400 mt-0.5" />
-                  <span className="text-gray-300">Free $PRIMX tokens monthly</span>
+      {/* Testimonials Section */}
+      <section id="community" className="py-20 bg-black">
+        <div className="container mx-auto px-6">
+          <h2 className="text-4xl font-bold text-center mb-16 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
+            Trusted by Traders Worldwide
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            {[
+              { text: "PrimX transformed my trading. The AI insights are incredibly accurate and helped me double my profits in months!", author: "Alex R.", location: "New York, USA" },
+              { text: "Getting funded through PrimX was seamless. Their challenges are fair, and the payout process is super efficient. Highly recommend!", author: "Sarah L.", location: "London, UK" },
+              { text: "The risk management tools are a game-changer. I feel much more confident in my trades knowing PrimX is there to guide me.", author: "Mike C.", location: "Sydney, Australia" },
+            ].map((testimonial, index) => (
+              <div key={index} className="bg-gray-900 rounded-lg p-8 shadow-lg border border-gray-800 relative">
+                <p className="text-lg text-gray-300 mb-6 italic">"{testimonial.text}"</p>
+                <div className="flex items-center">
+                  <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-xl font-bold text-white mr-4">
+                    {testimonial.author.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-white">{testimonial.author}</p>
+                    <p className="text-gray-400 text-sm">{testimonial.location}</p>
+                  </div>
                 </div>
-                <div className="flex items-start space-x-3">
-                  <Check className="w-5 h-5 text-green-400 mt-0.5" />
-                  <span className="text-gray-300">Priority support & payouts</span>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <Check className="w-5 h-5 text-green-400 mt-0.5" />
-                  <span className="text-gray-300">Institutional market analysis</span>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <Check className="w-5 h-5 text-green-400 mt-0.5" />
-                  <span className="text-gray-300">Exclusive courses & webinars</span>
+                <div className="absolute top-4 right-4 text-green-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-quote"><path d="M12 21.5c-4.9 0-9-4-9-9s4-9 9-9 9 4 9 9-4 9-9 9Z"/><path d="M14 13a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V15a2 2 0 0 0-2-2Z"/><path d="M6 13a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V15a2 2 0 0 0-2-2Z"/></svg>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-              <button 
-                onClick={() => router.push('/auth')}
-                className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-black font-semibold rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-200 transform hover:scale-105"
-              >
-                Upgrade Now
-                <ArrowRight className="inline-block ml-2 w-5 h-5" />
-              </button>
-            </div>
+      {/* Stats Section */}
+      <section id="stats" className="py-20 bg-gray-950">
+        <div className="container mx-auto px-6">
+          <h2 className="text-4xl font-bold text-center mb-16 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
+            Our Community by the Numbers
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+            {stats.map((stat, index) => (
+              <div key={index} className="bg-gray-900 rounded-lg p-8 text-center border border-gray-800 shadow-lg transform hover:scale-105 transition-transform duration-300">
+                <p className="text-5xl font-extrabold text-green-400 mb-3">{stat.value}</p>
+                <p className="text-lg text-gray-300">{stat.label}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* FAQ Section */}
-      <section className="py-20 px-6 bg-black">
-        <div className="container mx-auto max-w-4xl">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold text-white">Frequently Asked Questions</h2>
-          </div>
-          <div className="space-y-4">
+      <section className="py-20 bg-black">
+        <div className="container mx-auto px-6">
+          <h2 className="text-4xl font-bold text-center mb-12 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
+            Frequently Asked Questions
+          </h2>
+          <div className="max-w-3xl mx-auto space-y-6">
             {faqs.map((faq, index) => (
-              <div 
-                key={index} 
-                className="border border-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-900 transition-colors"
-                onClick={() => toggleFAQ(index)}
-              >
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-white">{faq.question}</h3>
-                  <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${openFAQ === index ? 'rotate-180' : ''}`} />
-                </div>
+              <div key={index} className="bg-gray-900 rounded-lg p-6 border border-gray-800 shadow-lg">
+                <button
+                  className="flex justify-between items-center w-full text-left text-xl font-semibold text-white"
+                  onClick={() => toggleFAQ(index)}
+                >
+                  {faq.question}
+                  <ChevronDown className={`w-6 h-6 transform transition-transform duration-300 ${openFAQ === index ? 'rotate-180' : ''}`} />
+                </button>
                 {openFAQ === index && (
-                  <p className="text-gray-400 mt-2">{faq.answer}</p>
+                  <p className="mt-4 text-gray-300 leading-relaxed">
+                    {faq.answer}
+                  </p>
                 )}
               </div>
             ))}
@@ -531,34 +550,61 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Call to Action Section */}
+      <section className="py-20 bg-gradient-to-r from-green-700 to-emerald-700 text-white text-center">
+        <div className="container mx-auto px-6">
+          <h2 className="text-4xl font-bold mb-6">
+            Ready to Amplify Your Trading?
+          </h2>
+          <p className="text-xl mb-10 max-w-2xl mx-auto">
+            Join PrimX today and experience the future of AI-powered trading and funded accounts.
+          </p>
+          <button
+            onClick={() => router.push('/auth')}
+            className="px-10 py-4 bg-white text-green-800 font-bold rounded-lg shadow-lg hover:bg-gray-200 transition-colors duration-300 text-xl flex items-center justify-center mx-auto"
+          >
+            Start Your Free Trial Now! <ArrowRight className="ml-2 w-6 h-6" />
+          </button>
+        </div>
+      </section>
+
       {/* Footer */}
-      <footer className="py-12 px-6 border-t border-gray-900">
-        <div className="container mx-auto max-w-6xl">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                <img src="/primx-logo.jpg" alt="PRIMX Logo" className="w-5 h-5 text-black object-contain" />
+      <footer className="bg-gray-900 py-12 text-gray-400">
+        <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="text-center md:text-left">
+            <div className="flex items-center space-x-2 justify-center md:justify-start mb-4">
+              <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                <img src="/primx-logo.jpg" alt="PRIMX Logo" className="w-6 h-6 text-black object-contain" />
               </div>
-              <span className="text-xl font-bold">PRIMX</span>
+              <span className="text-2xl font-bold text-white">PRIMX</span>
             </div>
-            
-            <div className="flex space-x-6 text-sm text-gray-400">
-              <a href="#" className="hover:text-white transition-colors">Terms & Conditions</a>
-              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-white transition-colors">Help</a>
+            <p className="mb-4">Trade smarter, get funded, and achieve financial freedom with AI.</p>
+            <div className="flex space-x-4 justify-center md:justify-start">
+              <a href="#" className="hover:text-white transition-colors"><FaTwitter className="w-6 h-6" /></a>
+              <a href="#" className="hover:text-white transition-colors"><FaInstagram className="w-6 h-6" /></a>
+              <a href="#" className="hover:text-white transition-colors"><FaLinkedin className="w-6 h-6" /></a>
             </div>
-            
-            <p className="text-sm text-gray-400">
-              All Rights Reserved PrimX © 2025
-            </p>
-            <div className="flex space-x-4">
-              <a href="#" className="text-gray-400 hover:text-white transition-colors"><FaTwitter size={24} /></a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors"><FaInstagram size={24} /></a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors"><FaLinkedin size={24} /></a>
-            </div>
+          </div>
+
+          <div className="text-center md:text-left">
+            <h4 className="text-xl font-semibold text-white mb-4">Quick Links</h4>
+            <ul className="space-y-2">
+              <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
+              <li><a href="#challenges" className="hover:text-white transition-colors">Challenges</a></li>
+              <li><a href="#stats" className="hover:text-white transition-colors">Community</a></li>
+              <li><a href="#faqs" className="hover:text-white transition-colors">FAQs</a></li>
+            </ul>
+          </div>
+
+          <div className="text-center md:text-left">
+            <h4 className="text-xl font-semibold text-white mb-4">Contact Us</h4>
+            <p>Email: support@primx.com</p>
+            <p>Phone: +1 (123) 456-7890</p>
+            <p className="mt-4">&copy; 2025 PrimX. All rights reserved.</p>
           </div>
         </div>
       </footer>
+
     </div>
   );
 }

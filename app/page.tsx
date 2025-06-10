@@ -426,19 +426,23 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
-          <div className="mt-12 flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4">
+          <div className="mt-12 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
             <a
-              href="#"
-              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 md:text-lg"
+              href="https://apps.apple.com/app/primx/idYOUR_APP_ID" // Replace with actual App Store link
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-lg hover:bg-green-700 transition-colors duration-300 flex items-center justify-center"
             >
-              <img src="/apple-logo.png" alt="Apple App Store" className="h-6 w-6 mr-2" />
+              <img src="/appstore.jpeg" alt="Apple App Store" className="h-6 w-6 mr-2" />
               App Store
             </a>
             <a
-              href="#"
-              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 md:text-lg"
+              href="https://play.google.com/store/apps/details?id=com.primx.app" // Replace with actual Google Play link
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-lg hover:bg-green-700 transition-colors duration-300 flex items-center justify-center"
             >
-              <img src="/google-play-logo.png" alt="Google Play" className="h-6 w-6 mr-2" />
+              <img src="/playstore.jpeg" alt="Google Play Store" className="h-6 w-6 mr-2" />
               Google Play
             </a>
           </div>

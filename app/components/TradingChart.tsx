@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { createChart, ColorType, IChartApi, CandlestickSeries, LineSeries, HistogramSeries } from 'lightweight-charts';
+import { createChart, ColorType, IChartApi, CandlestickSeries, LineSeries, HistogramSeries, Time } from 'lightweight-charts';
 import { getCandleData, getMarketData, CandleData, MarketData } from '../services/binanceService';
 
 interface TradingChartProps {
@@ -147,7 +147,7 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
           const sma200Data = calculateSMA(candleData, 200);
 
           const formattedCandleData = candleData.map(candle => ({
-            time: candle.time,
+            time: candle.time as Time,
             open: candle.open,
             high: candle.high,
             low: candle.low,
@@ -156,21 +156,21 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
 
           // Format volume data
           const volumeData = candleData.map(candle => ({
-            time: candle.time,
+            time: candle.time as Time,
             value: candle.volume,
             color: candle.close >= candle.open ? '#26a69a' : '#ef5350',
           }));
 
           const formattedSma20Data = sma20Data.map(item => ({
-            time: item.time,
+            time: item.time as Time,
             value: item.value
           }));
           const formattedSma50Data = sma50Data.map(item => ({
-            time: item.time,
+            time: item.time as Time,
             value: item.value
           }));
           const formattedSma200Data = sma200Data.map(item => ({
-            time: item.time,
+            time: item.time as Time,
             value: item.value
           }));
 

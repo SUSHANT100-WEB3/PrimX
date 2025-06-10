@@ -406,21 +406,41 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 bg-black">
-        <div className="container mx-auto px-6">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-16 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
-            Unleash Your Trading Edge with AI
+      <section id="features" className="py-16 md:py-24 bg-gray-950">
+        <div className="container mx-auto px-6 text-center">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
+            Cutting-Edge Technology, Unrivaled Edge
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+          <p className="text-base sm:text-lg text-gray-400 mb-12 max-w-3xl mx-auto">
+            Harness the power of AI and advanced analytics to elevate your trading performance.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
-              <div key={index} className="bg-gray-900 rounded-lg p-8 text-center border border-gray-800 shadow-lg transform hover:scale-105 transition-transform duration-300">
-                <div className="p-4 bg-green-600/20 rounded-full inline-flex mb-6">
-                  <feature.icon className="w-8 h-8 text-green-400" />
-                </div>
-                <h3 className="text-lg sm:text-xl font-bold mb-4 text-white">{feature.title}</h3>
-                <p className="text-sm md:text-base text-gray-300">{feature.description}</p>
+              <div
+                key={index}
+                className="bg-gray-800 rounded-lg p-8 transform transition-transform duration-300 hover:scale-105"
+              >
+                <feature.icon className="h-12 w-12 text-green-400 mx-auto mb-6" />
+                <h3 className="text-xl font-semibold text-white mb-3">{feature.title}</h3>
+                <p className="text-gray-400">{feature.description}</p>
               </div>
             ))}
+          </div>
+          <div className="mt-12 flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4">
+            <a
+              href="#"
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 md:text-lg"
+            >
+              <img src="/apple-logo.png" alt="Apple App Store" className="h-6 w-6 mr-2" />
+              App Store
+            </a>
+            <a
+              href="#"
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 md:text-lg"
+            >
+              <img src="/google-play-logo.png" alt="Google Play" className="h-6 w-6 mr-2" />
+              Google Play
+            </a>
           </div>
         </div>
       </section>

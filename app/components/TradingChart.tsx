@@ -212,11 +212,16 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
                 if (latestSma200) sma200Series.update(latestSma200);
               } else if (latestCandle.time === lastKnownCandleInSeries.time) {
                 // Same candle, check if values have changed before updating
-                const hasCandleChanged = 
-                  latestCandle.open !== lastKnownCandleInSeries.open ||
-                  latestCandle.high !== lastKnownCandleInSeries.high ||
-                  latestCandle.low !== lastKnownCandleInSeries.low ||
-                  latestCandle.close !== lastKnownCandleInSeries.close;
+                let hasCandleChanged = false;
+                // Ensure lastKnownCandleInSeries is actually a CandlestickData object
+                if (lastKnownCandleInSeries && 'open' in lastKnownCandleInSeries) {
+                  const typedLastKnownCandle = lastKnownCandleInSeries as CandlestickData<Time>;
+                  hasCandleChanged = 
+                    latestCandle.open !== typedLastKnownCandle.open ||
+                    latestCandle.high !== typedLastKnownCandle.high ||
+                    latestCandle.low !== typedLastKnownCandle.low ||
+                    latestCandle.close !== typedLastKnownCandle.close;
+                }
 
                 const currentVolumeData = volumeSeries.data();
                 const lastKnownVolumeInSeries = currentVolumeData.length > 0 ? currentVolumeData[currentVolumeData.length - 1] : undefined;

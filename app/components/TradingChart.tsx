@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { createChart, ColorType, IChartApi, CandlestickSeries, LineSeries, HistogramSeries, Time } from 'lightweight-charts';
+import { createChart, ColorType, IChartApi, CandlestickSeries, LineSeries, HistogramSeries, Time, HistogramData, LineData, SeriesDataItemTypeMap } from 'lightweight-charts';
 import { getCandleData, getMarketData, CandleData, MarketData } from '../services/binanceService';
 
 interface TradingChartProps {
@@ -215,7 +215,7 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
                 let hasCandleChanged = false;
                 // Ensure lastKnownCandleInSeries is actually a CandlestickData object
                 if (lastKnownCandleInSeries && 'open' in lastKnownCandleInSeries) {
-                  const typedLastKnownCandle = lastKnownCandleInSeries as CandlestickData<Time>;
+                  const typedLastKnownCandle = lastKnownCandleInSeries as SeriesDataItemTypeMap['Candlestick']<Time>;
                   hasCandleChanged = 
                     latestCandle.open !== typedLastKnownCandle.open ||
                     latestCandle.high !== typedLastKnownCandle.high ||
@@ -224,19 +224,19 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
                 }
 
                 const currentVolumeData = volumeSeries.data();
-                const lastKnownVolumeInSeries = currentVolumeData.length > 0 ? currentVolumeData[currentVolumeData.length - 1] : undefined;
+                const lastKnownVolumeInSeries = currentVolumeData.length > 0 ? currentVolumeData[currentVolumeData.length - 1] as HistogramData<Time> : undefined;
                 const hasVolumeChanged = !lastKnownVolumeInSeries || latestVolume.value !== lastKnownVolumeInSeries.value;
 
                 const currentSma20Data = sma20Series.data();
-                const lastKnownSma20InSeries = currentSma20Data.length > 0 ? currentSma20Data[currentSma20Data.length - 1] : undefined;
+                const lastKnownSma20InSeries = currentSma20Data.length > 0 ? currentSma20Data[currentSma20Data.length - 1] as LineData<Time> : undefined;
                 const hasSma20Changed = latestSma20?.value !== lastKnownSma20InSeries?.value;
 
                 const currentSma50Data = sma50Series.data();
-                const lastKnownSma50InSeries = currentSma50Data.length > 0 ? currentSma50Data[currentSma50Data.length - 1] : undefined;
+                const lastKnownSma50InSeries = currentSma50Data.length > 0 ? currentSma50Data[currentSma50Data.length - 1] as LineData<Time> : undefined;
                 const hasSma50Changed = latestSma50?.value !== lastKnownSma50InSeries?.value;
 
                 const currentSma200Data = sma200Series.data();
-                const lastKnownSma200InSeries = currentSma200Data.length > 0 ? currentSma200Data[currentSma200Data.length - 1] : undefined;
+                const lastKnownSma200InSeries = currentSma200Data.length > 0 ? currentSma200Data[currentSma200Data.length - 1] as LineData<Time> : undefined;
                 const hasSma200Changed = latestSma200?.value !== lastKnownSma200InSeries?.value;
 
                 if (hasCandleChanged || hasVolumeChanged || hasSma20Changed || hasSma50Changed || hasSma200Changed) {

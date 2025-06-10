@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { createChart, ColorType, IChartApi, CandlestickSeries, LineSeries, HistogramSeries, Time, HistogramData, LineData, SeriesDataItemTypeMap } from 'lightweight-charts';
+import { createChart, ColorType, IChartApi, CandlestickSeries, LineSeries, HistogramSeries, Time, HistogramData, LineData } from 'lightweight-charts';
 import { getCandleData, getMarketData, CandleData, MarketData } from '../services/binanceService';
 
 interface TradingChartProps {
@@ -213,9 +213,9 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
               } else if (latestCandle.time === lastKnownCandleInSeries.time) {
                 // Same candle, check if values have changed before updating
                 let hasCandleChanged = false;
-                // Ensure lastKnownCandleInSeries is actually a CandlestickData object
+                // Ensure lastKnownCandleInSeries is actually a CandleData object
                 if (lastKnownCandleInSeries && 'open' in lastKnownCandleInSeries) {
-                  const typedLastKnownCandle = lastKnownCandleInSeries as SeriesDataItemTypeMap['Candlestick']<Time>;
+                  const typedLastKnownCandle = lastKnownCandleInSeries as CandleData;
                   hasCandleChanged = 
                     latestCandle.open !== typedLastKnownCandle.open ||
                     latestCandle.high !== typedLastKnownCandle.high ||

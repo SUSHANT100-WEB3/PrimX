@@ -26,6 +26,21 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
   const lastLoadedSymbolRef = useRef<string | undefined>(undefined);
   const lastLoadedIntervalRef = useRef<string | undefined>(undefined);
 
+  // Determine SMA periods based on selected interval
+  const getSmaPeriods = (interval: string) => {
+    switch (interval) {
+      case '1m':
+      case '5m':
+      case '15m':
+        return { sma1: 5, sma2: 10, sma3: 20 };
+      case '1h':
+      case '4h':
+      case '1d':
+      default:
+        return { sma1: 20, sma2: 50, sma3: 200 };
+    }
+  };
+
   useEffect(() => {
     if (!chartContainerRef.current) {
       return;
@@ -87,21 +102,21 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
     const sma20Series = chart.addSeries(LineSeries, {
       color: '#2962FF',
       lineWidth: 2,
-      title: 'SMA 20',
+      title: `SMA ${getSmaPeriods(selectedInterval).sma1}`,
     });
 
     // Add 50-period SMA
     const sma50Series = chart.addSeries(LineSeries, {
       color: '#FF6B6B',
       lineWidth: 2,
-      title: 'SMA 50',
+      title: `SMA ${getSmaPeriods(selectedInterval).sma2}`,
     });
 
     // Add 200-period SMA
     const sma200Series = chart.addSeries(LineSeries, {
       color: '#4CAF50',
       lineWidth: 2,
-      title: 'SMA 200',
+      title: `SMA ${getSmaPeriods(selectedInterval).sma3}`,
     });
 
     chartRef.current = chart;
@@ -142,9 +157,11 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
         }
         
         if (candleData.length > 0) {
-          const sma20Data = calculateSMA(candleData, 20);
-          const sma50Data = calculateSMA(candleData, 50);
-          const sma200Data = calculateSMA(candleData, 200);
+          const { sma1, sma2, sma3 } = getSmaPeriods(selectedInterval);
+
+          const sma20Data = calculateSMA(candleData, sma1);
+          const sma50Data = calculateSMA(candleData, sma2);
+          const sma200Data = calculateSMA(candleData, sma3);
 
           const formattedCandleData = candleData.map(candle => ({
             time: candle.time as Time,
@@ -195,9 +212,9 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
               const latestVolume = volumeData[volumeData.length - 1];
 
               // Only attempt to get latest SMA if data is available for that period
-              const latestSma20 = formattedSma20Data.length > 0 ? formattedSma20Data[formattedSma20Data.length - 1] : undefined;
-              const latestSma50 = formattedSma50Data.length > 0 ? formattedSma50Data[formattedSma50Data.length - 1] : undefined;
-              const latestSma200 = formattedSma200Data.length > 0 ? formattedSma200Data[formattedSma200Data.length - 1] : undefined;
+              const latestSma1 = formattedSma20Data.length > 0 ? formattedSma20Data[formattedSma20Data.length - 1] : undefined;
+              const latestSma2 = formattedSma50Data.length > 0 ? formattedSma50Data[formattedSma50Data.length - 1] : undefined;
+              const latestSma3 = formattedSma200Data.length > 0 ? formattedSma200Data[formattedSma200Data.length - 1] : undefined;
 
               const currentCandleData = candlestickSeries.data();
               const lastKnownCandleInSeries = currentCandleData.length > 0 ? currentCandleData[currentCandleData.length - 1] : undefined;
@@ -207,9 +224,9 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
                 // New candle, update (which will append it)
                 candlestickSeries.update(latestCandle);
                 volumeSeries.update(latestVolume);
-                if (latestSma20) sma20Series.update(latestSma20);
-                if (latestSma50) sma50Series.update(latestSma50);
-                if (latestSma200) sma200Series.update(latestSma200);
+                if (latestSma1) sma20Series.update(latestSma1);
+                if (latestSma2) sma50Series.update(latestSma2);
+                if (latestSma3) sma200Series.update(latestSma3);
               } else if (latestCandle.time === lastKnownCandleInSeries.time) {
                 // Same candle, check if values have changed before updating
                 let hasCandleChanged = false;
@@ -228,23 +245,23 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
                 const hasVolumeChanged = !lastKnownVolumeInSeries || latestVolume.value !== lastKnownVolumeInSeries.value;
 
                 const currentSma20Data = sma20Series.data();
-                const lastKnownSma20InSeries = currentSma20Data.length > 0 ? currentSma20Data[currentSma20Data.length - 1] as LineData<Time> : undefined;
-                const hasSma20Changed = latestSma20?.value !== lastKnownSma20InSeries?.value;
+                const lastKnownSma1InSeries = currentSma20Data.length > 0 ? currentSma20Data[currentSma20Data.length - 1] as LineData<Time> : undefined;
+                const hasSma1Changed = latestSma1?.value !== lastKnownSma1InSeries?.value;
 
                 const currentSma50Data = sma50Series.data();
-                const lastKnownSma50InSeries = currentSma50Data.length > 0 ? currentSma50Data[currentSma50Data.length - 1] as LineData<Time> : undefined;
-                const hasSma50Changed = latestSma50?.value !== lastKnownSma50InSeries?.value;
+                const lastKnownSma2InSeries = currentSma50Data.length > 0 ? currentSma50Data[currentSma50Data.length - 1] as LineData<Time> : undefined;
+                const hasSma2Changed = latestSma2?.value !== lastKnownSma2InSeries?.value;
 
                 const currentSma200Data = sma200Series.data();
-                const lastKnownSma200InSeries = currentSma200Data.length > 0 ? currentSma200Data[currentSma200Data.length - 1] as LineData<Time> : undefined;
-                const hasSma200Changed = latestSma200?.value !== lastKnownSma200InSeries?.value;
+                const lastKnownSma3InSeries = currentSma200Data.length > 0 ? currentSma200Data[currentSma200Data.length - 1] as LineData<Time> : undefined;
+                const hasSma3Changed = latestSma3?.value !== lastKnownSma3InSeries?.value;
 
-                if (hasCandleChanged || hasVolumeChanged || hasSma20Changed || hasSma50Changed || hasSma200Changed) {
+                if (hasCandleChanged || hasVolumeChanged || hasSma1Changed || hasSma2Changed || hasSma3Changed) {
                   candlestickSeries.update(latestCandle);
                   volumeSeries.update(latestVolume);
-                  if (latestSma20) sma20Series.update(latestSma20);
-                  if (latestSma50) sma50Series.update(latestSma50);
-                  if (latestSma200) sma200Series.update(latestSma200);
+                  if (latestSma1) sma20Series.update(latestSma1);
+                  if (latestSma2) sma50Series.update(latestSma2);
+                  if (latestSma3) sma200Series.update(latestSma3);
                 }
               }
             }

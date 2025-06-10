@@ -409,7 +409,7 @@ export default function LandingPage() {
       <section id="features" className="py-16 md:py-24 bg-gray-950">
         <div className="container mx-auto px-6 text-center">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
-            Cutting-Edge Technology, Unrivaled Edge
+            Cutting-Edge Technology,Unrivaled Edge
           </h2>
           <p className="text-base sm:text-lg text-gray-400 mb-12 max-w-3xl mx-auto">
             Harness the power of AI and advanced analytics to elevate your trading performance.

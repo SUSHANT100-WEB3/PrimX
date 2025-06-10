@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   TrendingUp, ChartBar, Brain, Shield, Award, Users, 
@@ -39,6 +39,7 @@ export default function LandingPage() {
   const [bbLower, setBbLower] = useState<number | null>(null);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [marketData, setMarketData] = useState<MarketData | null>(null); // New state for market data
+  const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT'); // New state for selected cryptocurrency symbol
 
   useEffect(() => {
     const handleScroll = () => {
@@ -50,7 +51,7 @@ export default function LandingPage() {
 
   useEffect(() => {
     const fetchAndCalculateIndicators = async () => {
-      const candleData: CandleData[] = await getCandleData('BTCUSDT', '1d'); // Fetch daily candle data
+      const candleData: CandleData[] = await getCandleData(selectedSymbol, '1d'); // Fetch daily candle data
 
       if (candleData.length > 0) {
         const latestClosePrice = candleData[candleData.length - 1].close;
@@ -201,6 +202,10 @@ export default function LandingPage() {
     return `${diff >= 0 ? '+' : ''}${diff.toFixed(2)}%`;
   };
 
+  const handleMarketStatsUpdate = useCallback((data: MarketData) => {
+    setMarketData(data);
+  }, []);
+
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Navigation */}
@@ -214,6 +219,9 @@ export default function LandingPage() {
                 <img src="/primx-logo.jpg" alt="PRIMX Logo" className="w-6 h-6 text-black object-contain" />
               </div>
               <span className="text-2xl font-bold">PRIMX</span>
+
+              {/* Dropdown for cryptocurrency selection */}
+              
             </div>
 
             {/* Desktop Menu */}
@@ -278,25 +286,25 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-gradient-to-br from-green-600/20 to-emerald-800/20 via-transparent"></div>
         </div>
         <div className="relative z-10 container mx-auto px-6">
-          <p className="text-xl md:text-2xl font-semibold text-green-400 mb-8 flex items-center justify-center text-center">
-              <Zap className="w-6 h-6 mr-2" /> Flawless Execution, Unmatched Alpha
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-green-400 mb-8 flex items-center justify-center text-center leading-tight">
+              <Zap className="w-6 h-6 mr-2" /> Flawless Execution,Unmatched Alpha
             </p>
           <h1 className="text-5xl md:text-7xl font-extrabold leading-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
             Trade Smarter.<br /><span className="bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-emerald-400">Get Funded.</span>
           </h1>
-          <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto mb-10">
+          <p className="text-base sm:text-lg md:text-xl text-gray-300 max-w-3xl mx-auto mb-10">
             Analyze your trades with AI, improve your performance, and trade with up to $200K in funded capital.
           </p>
           <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
             <button
               onClick={() => router.push('/auth')}
-              className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-black font-bold rounded-lg shadow-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 flex items-center justify-center text-lg"
+              className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-black font-bold rounded-lg shadow-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 flex items-center justify-center text-base md:text-lg"
             >
               Start Free Trial <ArrowRight className="ml-2 w-5 h-5" />
             </button>
             <button
               onClick={() => { /* Implement demo view logic */ }}
-              className="px-8 py-3 bg-gray-800 text-gray-200 font-semibold rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-300 flex items-center justify-center text-lg"
+              className="px-8 py-3 bg-gray-800 text-gray-200 font-semibold rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-300 flex items-center justify-center text-base md:text-lg"
             >
               View Demo
             </button>
@@ -307,7 +315,7 @@ export default function LandingPage() {
       {/* Chart Section */}
       <section className="py-20 bg-gray-950">
         <div className="container mx-auto px-6">
-          <h2 className="text-4xl font-bold text-center mb-12 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-12 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
             Real-time Market Insights
           </h2>
           <div className="bg-gray-900 rounded-lg shadow-xl p-6 md:p-10 border border-gray-800">
@@ -319,6 +327,24 @@ export default function LandingPage() {
                 <div>
                   <h3 className="text-2xl font-bold">Bitcoin <span className="text-gray-400">/ USDT</span></h3>
                   <p className="text-green-500 text-lg">Live Price: ${currentPrice ? currentPrice.toFixed(2) : 'Loading...'}</p>
+                </div>
+                {/* Cryptocurrency Dropdown */}
+                <div className="relative">
+                  <select
+                    aria-label="Select cryptocurrency pair"
+                    value={selectedSymbol}
+                    onChange={(e) => setSelectedSymbol(e.target.value)}
+                    className="appearance-none bg-gray-700 border border-gray-600 text-white py-2 px-4 rounded-lg pr-8 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    <option value="BTCUSDT">BTC/USDT</option>
+                    <option value="ETHUSDT">ETH/USDT</option>
+                    <option value="BNBUSDT">BNB/USDT</option>
+                    <option value="XRPUSDT">XRP/USDT</option>
+                    <option value="ADAUSDT">ADA/USDT</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-white">
+                    <ChevronDown className="w-5 h-5" />
+                  </div>
                 </div>
               </div>
               <div className="flex space-x-4">
@@ -342,8 +368,8 @@ export default function LandingPage() {
             </div>
 
             {selectedTab === 'chart' && (
-              <div className="h-[500px] w-full">
-                <TradingChart />
+              <div className="h-64 sm:h-80 md:h-96 lg:h-[500px] w-full">
+                <TradingChart symbol={selectedSymbol} onMarketStatsUpdate={handleMarketStatsUpdate} />
               </div>
             )}
 
@@ -352,25 +378,25 @@ export default function LandingPage() {
                 <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
                   <h4 className="text-xl font-bold mb-4 text-green-400">Relative Strength Index (RSI)</h4>
                   <div className="space-y-3 text-gray-300">
-                    <p>RSI (7): <span className="font-semibold">{rsi7 !== null ? rsi7.toFixed(2) : 'N/A'}</span> (<span className={`${getRSIInterpretation(rsi7) === 'Oversold (Bullish)' ? 'text-green-500' : getRSIInterpretation(rsi7) === 'Overbought (Bearish)' ? 'text-red-500' : 'text-gray-400'}`}>{getRSIInterpretation(rsi7)}</span>)</p>
-                    <p>RSI (14): <span className="font-semibold">{rsi14 !== null ? rsi14.toFixed(2) : 'N/A'}</span> (<span className={`${getRSIInterpretation(rsi14) === 'Oversold (Bullish)' ? 'text-green-500' : getRSIInterpretation(rsi14) === 'Overbought (Bearish)' ? 'text-red-500' : 'text-gray-400'}`}>{getRSIInterpretation(rsi14)}</span>)</p>
-                    <p>RSI (25): <span className="font-semibold">{rsi25 !== null ? rsi25.toFixed(2) : 'N/A'}</span> (<span className={`${getRSIInterpretation(rsi25) === 'Oversold (Bullish)' ? 'text-green-500' : getRSIInterpretation(rsi25) === 'Overbought (Bearish)' ? 'text-red-500' : 'text-gray-400'}`}>{getRSIInterpretation(rsi25)}</span>)</p>
+                    <p className="text-sm md:text-base">RSI (7): <span className="font-semibold">{rsi7 !== null ? rsi7.toFixed(2) : 'N/A'}</span> (<span className={`${getRSIInterpretation(rsi7) === 'Oversold (Bullish)' ? 'text-green-500' : getRSIInterpretation(rsi7) === 'Overbought (Bearish)' ? 'text-red-500' : 'text-gray-400'}`}>{getRSIInterpretation(rsi7)}</span>)</p>
+                    <p className="text-sm md:text-base">RSI (14): <span className="font-semibold">{rsi14 !== null ? rsi14.toFixed(2) : 'N/A'}</span> (<span className={`${getRSIInterpretation(rsi14) === 'Oversold (Bullish)' ? 'text-green-500' : getRSIInterpretation(rsi14) === 'Overbought (Bearish)' ? 'text-red-500' : 'text-gray-400'}`}>{getRSIInterpretation(rsi14)}</span>)</p>
+                    <p className="text-sm md:text-base">RSI (25): <span className="font-semibold">{rsi25 !== null ? rsi25.toFixed(2) : 'N/A'}</span> (<span className={`${getRSIInterpretation(rsi25) === 'Oversold (Bullish)' ? 'text-green-500' : getRSIInterpretation(rsi25) === 'Overbought (Bearish)' ? 'text-red-500' : 'text-gray-400'}`}>{getRSIInterpretation(rsi25)}</span>)</p>
                   </div>
                 </div>
                 <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
                   <h4 className="text-xl font-bold mb-4 text-green-400">Simple Moving Averages (SMA)</h4>
                   <div className="space-y-3 text-gray-300">
-                    <p>SMA (5): <span className="font-semibold">{sma5 !== null ? sma5.toFixed(2) : 'N/A'}</span> (<span className={`${getSMABollingerInterpretation(sma5, 'SMA') === 'Bullish' ? 'text-green-500' : 'text-red-500'}`}>{getSMABollingerInterpretation(sma5, 'SMA')} {getSMADifferencePercentage(sma5)}</span>)</p>
-                    <p>SMA (20): <span className="font-semibold">{sma20 !== null ? sma20.toFixed(2) : 'N/A'}</span> (<span className={`${getSMABollingerInterpretation(sma20, 'SMA') === 'Bullish' ? 'text-green-500' : 'text-red-500'}`}>{getSMABollingerInterpretation(sma20, 'SMA')} {getSMADifferencePercentage(sma20)}</span>)</p>
-                    <p>SMA (100): <span className="font-semibold">{sma100 !== null ? sma100.toFixed(2) : 'N/A'}</span> (<span className={`${getSMABollingerInterpretation(sma100, 'SMA') === 'Bullish' ? 'text-green-500' : 'text-red-500'}`}>{getSMABollingerInterpretation(sma100, 'SMA')} {getSMADifferencePercentage(sma100)}</span>)</p>
+                    <p className="text-sm md:text-base">SMA (5): <span className="font-semibold">{sma5 !== null ? sma5.toFixed(2) : 'N/A'}</span> (<span className={`${getSMABollingerInterpretation(sma5, 'SMA') === 'Bullish' ? 'text-green-500' : 'text-red-500'}`}>{getSMABollingerInterpretation(sma5, 'SMA')} {getSMADifferencePercentage(sma5)}</span>)</p>
+                    <p className="text-sm md:text-base">SMA (20): <span className="font-semibold">{sma20 !== null ? sma20.toFixed(2) : 'N/A'}</span> (<span className={`${getSMABollingerInterpretation(sma20, 'SMA') === 'Bullish' ? 'text-green-500' : 'text-red-500'}`}>{getSMABollingerInterpretation(sma20, 'SMA')} {getSMADifferencePercentage(sma20)}</span>)</p>
+                    <p className="text-sm md:text-base">SMA (100): <span className="font-semibold">{sma100 !== null ? sma100.toFixed(2) : 'N/A'}</span> (<span className={`${getSMABollingerInterpretation(sma100, 'SMA') === 'Bullish' ? 'text-green-500' : 'text-red-500'}`}>{getSMABollingerInterpretation(sma100, 'SMA')} {getSMADifferencePercentage(sma100)}</span>)</p>
                   </div>
                 </div>
                 <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
                   <h4 className="text-xl font-bold mb-4 text-green-400">Bollinger Bands (BB)</h4>
                   <div className="space-y-3 text-gray-300">
-                    <p>Upper Band: <span className="font-semibold">{bbUpper !== null ? bbUpper.toFixed(2) : 'N/A'}</span></p>
-                    <p>Middle Band: <span className="font-semibold">{bbMiddle !== null ? bbMiddle.toFixed(2) : 'N/A'}</span></p>
-                    <p>Lower Band: <span className="font-semibold">{bbLower !== null ? bbLower.toFixed(2) : 'N/A'}</span> (<span className={`${getSMABollingerInterpretation(bbLower, 'LowerBBand') === 'Bullish' ? 'text-green-500' : 'text-gray-400'}`}>{getSMABollingerInterpretation(bbLower, 'LowerBBand')}</span>)</p>
+                    <p className="text-sm md:text-base">Upper Band: <span className="font-semibold">{bbUpper !== null ? bbUpper.toFixed(2) : 'N/A'}</span></p>
+                    <p className="text-sm md:text-base">Middle Band: <span className="font-semibold">{bbMiddle !== null ? bbMiddle.toFixed(2) : 'N/A'}</span></p>
+                    <p className="text-sm md:text-base">Lower Band: <span className="font-semibold">{bbLower !== null ? bbLower.toFixed(2) : 'N/A'}</span> (<span className={`${getSMABollingerInterpretation(bbLower, 'LowerBBand') === 'Bullish' ? 'text-green-500' : 'text-gray-400'}`}>{getSMABollingerInterpretation(bbLower, 'LowerBBand')}</span>)</p>
                   </div>
                 </div>
               </div>
@@ -382,7 +408,7 @@ export default function LandingPage() {
       {/* Features Section */}
       <section id="features" className="py-20 bg-black">
         <div className="container mx-auto px-6">
-          <h2 className="text-4xl font-bold text-center mb-16 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-16 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
             Unleash Your Trading Edge with AI
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
@@ -391,8 +417,8 @@ export default function LandingPage() {
                 <div className="p-4 bg-green-600/20 rounded-full inline-flex mb-6">
                   <feature.icon className="w-8 h-8 text-green-400" />
                 </div>
-                <h3 className="text-xl font-bold mb-4 text-white">{feature.title}</h3>
-                <p className="text-gray-300">{feature.description}</p>
+                <h3 className="text-lg sm:text-xl font-bold mb-4 text-white">{feature.title}</h3>
+                <p className="text-sm md:text-base text-gray-300">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -402,17 +428,17 @@ export default function LandingPage() {
       {/* Challenges Section */}
       <section id="challenges" className="py-20 bg-gray-950">
         <div className="container mx-auto px-6">
-          <h2 className="text-4xl font-bold text-center mb-12 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-12 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
             Proprietary Trading Challenges
           </h2>
-          <p className="text-lg text-gray-300 text-center mb-10 max-w-3xl mx-auto">
+          <p className="text-base sm:text-lg text-gray-300 text-center mb-10 max-w-3xl mx-auto">
             Choose from our 1-step or 2-step evaluation challenges to prove your trading prowess and get access to significant funded capital.
           </p>
 
           <div className="flex justify-center mb-10 space-x-4">
             <button
               onClick={() => setEvaluationType('1-step')}
-              className={`px-6 py-3 rounded-full font-semibold text-lg transition-all duration-300 ${
+              className={`px-6 py-3 rounded-full font-semibold text-base sm:text-lg transition-all duration-300 ${
                 evaluationType === '1-step'
                   ? 'bg-green-600 text-white shadow-lg'
                   : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
@@ -422,7 +448,7 @@ export default function LandingPage() {
             </button>
             <button
               onClick={() => setEvaluationType('2-step')}
-              className={`px-6 py-3 rounded-full font-semibold text-lg transition-all duration-300 ${
+              className={`px-6 py-3 rounded-full font-semibold text-base sm:text-lg transition-all duration-300 ${
                 evaluationType === '2-step'
                   ? 'bg-green-600 text-white shadow-lg'
                   : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
@@ -435,7 +461,7 @@ export default function LandingPage() {
           <div className="overflow-x-auto mb-16">
             <table className="min-w-full bg-gray-900 rounded-lg shadow-xl border border-gray-800">
               <thead>
-                <tr className="bg-gray-800 text-gray-300 text-left">
+                <tr className="bg-gray-800 text-gray-300 text-left text-sm md:text-base">
                   <th className="py-4 px-6">Account Size</th>
                   <th className="py-4 px-6">Gain Split</th>
                   <th className="py-4 px-6">Step 1 Goal</th>
@@ -448,7 +474,7 @@ export default function LandingPage() {
               </thead>
               <tbody>
                 {currentChallenges.map((challenge, index) => (
-                  <tr key={index} className="border-b border-gray-800 last:border-b-0 hover:bg-gray-850 transition-colors duration-200">
+                  <tr key={index} className="border-b border-gray-800 last:border-b-0 hover:bg-gray-850 transition-colors duration-200 text-sm md:text-base">
                     <td className="py-4 px-6 font-semibold text-white">{challenge.size}</td>
                     <td className="py-4 px-6 text-green-400">{challenge.gainSplit}</td>
                     <td className="py-4 px-6">{challenge.step1Goal}</td>
@@ -466,7 +492,7 @@ export default function LandingPage() {
           <div className="text-center">
             <button
               onClick={() => router.push('/auth')}
-              className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-black font-bold rounded-lg shadow-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 flex items-center justify-center mx-auto text-lg"
+              className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-black font-bold rounded-lg shadow-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 flex items-center justify-center mx-auto text-base md:text-lg"
             >
               Get Funded Today! <ArrowRight className="ml-2 w-5 h-5" />
             </button>
@@ -477,7 +503,7 @@ export default function LandingPage() {
       {/* Testimonials Section */}
       <section id="community" className="py-20 bg-black">
         <div className="container mx-auto px-6">
-          <h2 className="text-4xl font-bold text-center mb-16 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-16 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
             Trusted by Traders Worldwide
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
@@ -487,13 +513,13 @@ export default function LandingPage() {
               { text: "The risk management tools are a game-changer. I feel much more confident in my trades knowing PrimX is there to guide me.", author: "Mike C.", location: "Sydney, Australia" },
             ].map((testimonial, index) => (
               <div key={index} className="bg-gray-900 rounded-lg p-8 shadow-lg border border-gray-800 relative">
-                <p className="text-lg text-gray-300 mb-6 italic">"{testimonial.text}"</p>
+                <p className="text-base md:text-lg text-gray-300 mb-6 italic">"{testimonial.text}"</p>
                 <div className="flex items-center">
                   <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-xl font-bold text-white mr-4">
                     {testimonial.author.charAt(0)}
                   </div>
                   <div>
-                    <p className="font-semibold text-white">{testimonial.author}</p>
+                    <p className="font-semibold text-white text-base md:text-lg">{testimonial.author}</p>
                     <p className="text-gray-400 text-sm">{testimonial.location}</p>
                   </div>
                 </div>
@@ -509,14 +535,14 @@ export default function LandingPage() {
       {/* Stats Section */}
       <section id="stats" className="py-20 bg-gray-950">
         <div className="container mx-auto px-6">
-          <h2 className="text-4xl font-bold text-center mb-16 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-16 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
             Our Community by the Numbers
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
             {stats.map((stat, index) => (
               <div key={index} className="bg-gray-900 rounded-lg p-8 text-center border border-gray-800 shadow-lg transform hover:scale-105 transition-transform duration-300">
-                <p className="text-5xl font-extrabold text-green-400 mb-3">{stat.value}</p>
-                <p className="text-lg text-gray-300">{stat.label}</p>
+                <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-green-400 mb-3">{stat.value}</p>
+                <p className="text-base md:text-lg text-gray-300">{stat.label}</p>
               </div>
             ))}
           </div>
@@ -526,21 +552,21 @@ export default function LandingPage() {
       {/* FAQ Section */}
       <section className="py-20 bg-black">
         <div className="container mx-auto px-6">
-          <h2 className="text-4xl font-bold text-center mb-12 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-12 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
             Frequently Asked Questions
           </h2>
           <div className="max-w-3xl mx-auto space-y-6">
             {faqs.map((faq, index) => (
               <div key={index} className="bg-gray-900 rounded-lg p-6 border border-gray-800 shadow-lg">
                 <button
-                  className="flex justify-between items-center w-full text-left text-xl font-semibold text-white"
+                  className="flex justify-between items-center w-full text-left text-base sm:text-xl font-semibold text-white"
                   onClick={() => toggleFAQ(index)}
                 >
                   {faq.question}
                   <ChevronDown className={`w-6 h-6 transform transition-transform duration-300 ${openFAQ === index ? 'rotate-180' : ''}`} />
                 </button>
                 {openFAQ === index && (
-                  <p className="mt-4 text-gray-300 leading-relaxed">
+                  <p className="mt-4 text-gray-300 leading-relaxed text-sm md:text-base">
                     {faq.answer}
                   </p>
                 )}
@@ -553,15 +579,15 @@ export default function LandingPage() {
       {/* Call to Action Section */}
       <section className="py-20 bg-gradient-to-r from-green-700 to-emerald-700 text-white text-center">
         <div className="container mx-auto px-6">
-          <h2 className="text-4xl font-bold mb-6">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
             Ready to Amplify Your Trading?
           </h2>
-          <p className="text-xl mb-10 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl mb-10 max-w-2xl mx-auto">
             Join PrimX today and experience the future of AI-powered trading and funded accounts.
           </p>
           <button
             onClick={() => router.push('/auth')}
-            className="px-10 py-4 bg-white text-green-800 font-bold rounded-lg shadow-lg hover:bg-gray-200 transition-colors duration-300 text-xl flex items-center justify-center mx-auto"
+            className="px-10 py-4 bg-white text-green-800 font-bold rounded-lg shadow-lg hover:bg-gray-200 transition-colors duration-300 text-base md:text-xl flex items-center justify-center mx-auto"
           >
             Start Your Free Trial Now! <ArrowRight className="ml-2 w-6 h-6" />
           </button>
@@ -576,9 +602,9 @@ export default function LandingPage() {
               <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
                 <img src="/primx-logo.jpg" alt="PRIMX Logo" className="w-6 h-6 text-black object-contain" />
               </div>
-              <span className="text-2xl font-bold text-white">PRIMX</span>
+              <span className="text-xl sm:text-2xl font-bold text-white">PRIMX</span>
             </div>
-            <p className="mb-4">Trade smarter, get funded, and achieve financial freedom with AI.</p>
+            <p className="mb-4 text-sm md:text-base">Trade smarter, get funded, and achieve financial freedom with AI.</p>
             <div className="flex space-x-4 justify-center md:justify-start">
               <a href="#" className="hover:text-white transition-colors"><FaTwitter className="w-6 h-6" /></a>
               <a href="#" className="hover:text-white transition-colors"><FaInstagram className="w-6 h-6" /></a>
@@ -587,8 +613,8 @@ export default function LandingPage() {
           </div>
 
           <div className="text-center md:text-left">
-            <h4 className="text-xl font-semibold text-white mb-4">Quick Links</h4>
-            <ul className="space-y-2">
+            <h4 className="text-lg sm:text-xl font-semibold text-white mb-4">Quick Links</h4>
+            <ul className="space-y-2 text-sm md:text-base">
               <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
               <li><a href="#challenges" className="hover:text-white transition-colors">Challenges</a></li>
               <li><a href="#stats" className="hover:text-white transition-colors">Community</a></li>
@@ -597,10 +623,10 @@ export default function LandingPage() {
           </div>
 
           <div className="text-center md:text-left">
-            <h4 className="text-xl font-semibold text-white mb-4">Contact Us</h4>
-            <p>Email: support@primx.com</p>
-            <p>Phone: +1 (123) 456-7890</p>
-            <p className="mt-4">&copy; 2025 PrimX. All rights reserved.</p>
+            <h4 className="text-lg sm:text-xl font-semibold text-white mb-4">Contact Us</h4>
+            <p className="text-sm md:text-base">Email: support@primx.com</p>
+            <p className="text-sm md:text-base">Phone: +1 (123) 456-7890</p>
+            <p className="mt-4 text-sm md:text-base">&copy; 2025 PrimX. All rights reserved.</p>
           </div>
         </div>
       </footer>

@@ -16,21 +16,34 @@ export interface MarketData {
 
 const BINANCE_API_BASE = 'https://api.binance.com/api/v3';
 
-export async function getCandleData(symbol: string, interval: string): Promise<CandleData[]> {
+export async function getCandleData(symbol: string, interval: string, limit: number = 500): Promise<CandleData[]> {
   try {
     const response = await fetch(
-      `${BINANCE_API_BASE}/klines?symbol=${symbol}&interval=${interval}&limit=500`
+      `${BINANCE_API_BASE}/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`
     );
     const data = await response.json();
 
-    return data.map((candle: any[]) => ({
-      time: Math.floor(candle[0] / 1000),
+    const rawCandleData = data.map((candle: any[]) => ({
+      time: candle[0],
       open: parseFloat(candle[1]),
       high: parseFloat(candle[2]),
       low: parseFloat(candle[3]),
       close: parseFloat(candle[4]),
       volume: parseFloat(candle[5]),
     }));
+
+    // Filter out duplicates and then sort to ensure strictly ascending order
+    const seenTimes = new Set<number>();
+    const uniqueCandleData: CandleData[] = [];
+
+    for (const candle of rawCandleData) {
+      if (!seenTimes.has(candle.time)) {
+        seenTimes.add(candle.time);
+        uniqueCandleData.push(candle);
+      }
+    }
+
+    return uniqueCandleData.sort((a, b) => a.time - b.time);
   } catch (error) {
     console.error('Error fetching candle data:', error);
     return [];

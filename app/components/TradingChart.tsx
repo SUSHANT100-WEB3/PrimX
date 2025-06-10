@@ -23,15 +23,14 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const [selectedInterval, setSelectedInterval] = useState(interval);
+  const lastLoadedSymbolRef = useRef<string | undefined>(undefined);
+  const lastLoadedIntervalRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    console.log("TradingChart: useEffect triggered");
     if (!chartContainerRef.current) {
-      console.log("TradingChart: chartContainerRef.current is null");
       return;
     }
 
-    console.log("TradingChart: Initializing chart");
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: '#1a1a1a' },
@@ -101,6 +100,8 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
       title: 'SMA 200',
     });
 
+    chartRef.current = chart;
+
     // Calculate moving averages
     const calculateSMA = (data: CandleData[], period: number) => {
       const smaData = [];
@@ -114,75 +115,156 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
       return smaData;
     };
 
+    let isActive = true; // Flag to ensure data fetching only happens for the active chart instance
+
     // Fetch and update data
-    const fetchData = async () => {
-      console.log("TradingChart: Fetching data for symbol", symbol, "and interval", selectedInterval);
-      const candleData = await getCandleData(symbol, selectedInterval);
-      const marketStats = await getMarketData(symbol);
-      
-      // Call the callback with the latest price
-      if (onMarketStatsUpdate) {
-        onMarketStatsUpdate(marketStats);
+    const fetchData = async (isLiveUpdate: boolean = false) => {
+      if (!isActive || !chartRef.current) {
+        return;
       }
-      
-      if (candleData.length > 0) {
-        console.log("TradingChart: Data received, setting chart data");
-        const sma20Data = calculateSMA(candleData, 20);
-        const sma50Data = calculateSMA(candleData, 50);
-        const sma200Data = calculateSMA(candleData, 200);
 
-        const formattedCandleData = candleData.map(candle => ({
-          time: new Date(candle.time * 1000).toISOString().split('T')[0],
-          open: candle.open,
-          high: candle.high,
-          low: candle.low,
-          close: candle.close,
-        }));
+      try {
+        const limit = isLiveUpdate ? 1 : 500; // Fetch only 1 candle for live updates, 500 for initial/symbol/interval change
+        const candleData = await getCandleData(symbol, selectedInterval, limit);
+        const marketStats = await getMarketData(symbol);
+        
+        if (!isActive || !chartRef.current) {
+          return;
+        }
 
-        // Format volume data
-        const volumeData = candleData.map(candle => ({
-          time: new Date(candle.time * 1000).toISOString().split('T')[0],
-          value: candle.volume,
-          color: candle.close >= candle.open ? '#26a69a' : '#ef5350',
-        }));
+        // Call the callback with the latest price
+        if (onMarketStatsUpdate) {
+          onMarketStatsUpdate(marketStats);
+        }
+        
+        if (candleData.length > 0) {
+          const sma20Data = calculateSMA(candleData, 20);
+          const sma50Data = calculateSMA(candleData, 50);
+          const sma200Data = calculateSMA(candleData, 200);
 
-        const formattedSma20Data = sma20Data.map(item => ({
-          time: new Date(item.time * 1000).toISOString().split('T')[0],
-          value: item.value
-        }));
-        const formattedSma50Data = sma50Data.map(item => ({
-          time: new Date(item.time * 1000).toISOString().split('T')[0],
-          value: item.value
-        }));
-        const formattedSma200Data = sma200Data.map(item => ({
-          time: new Date(item.time * 1000).toISOString().split('T')[0],
-          value: item.value
-        }));
+          const formattedCandleData = candleData.map(candle => ({
+            time: candle.time,
+            open: candle.open,
+            high: candle.high,
+            low: candle.low,
+            close: candle.close,
+          }));
 
-        candlestickSeries.setData(formattedCandleData);
-        volumeSeries.setData(volumeData);
-        sma20Series.setData(formattedSma20Data);
-        sma50Series.setData(formattedSma50Data);
-        sma200Series.setData(formattedSma200Data);
+          // Format volume data
+          const volumeData = candleData.map(candle => ({
+            time: candle.time,
+            value: candle.volume,
+            color: candle.close >= candle.open ? '#26a69a' : '#ef5350',
+          }));
 
-        // Fit content
-        chart.timeScale().fitContent();
-      } else {
-        console.log("TradingChart: No candle data received.");
+          const formattedSma20Data = sma20Data.map(item => ({
+            time: item.time,
+            value: item.value
+          }));
+          const formattedSma50Data = sma50Data.map(item => ({
+            time: item.time,
+            value: item.value
+          }));
+          const formattedSma200Data = sma200Data.map(item => ({
+            time: item.time,
+            value: item.value
+          }));
+
+          // Check chartRef.current again before setting data
+          if (chartRef.current) {
+            // Determine if we should update or set new data
+            const isInitialLoadOrSymbolChange = !lastLoadedSymbolRef.current || 
+              symbol !== lastLoadedSymbolRef.current || 
+              selectedInterval !== lastLoadedIntervalRef.current;
+
+            if (isInitialLoadOrSymbolChange) {
+              candlestickSeries.setData(formattedCandleData);
+              volumeSeries.setData(volumeData);
+              sma20Series.setData(formattedSma20Data);
+              sma50Series.setData(formattedSma50Data);
+              sma200Series.setData(formattedSma200Data);
+              lastLoadedSymbolRef.current = symbol;
+              lastLoadedIntervalRef.current = selectedInterval;
+              chartRef.current.timeScale().fitContent(); // Fit content only on initial load or symbol/interval change
+            } else if (isLiveUpdate && formattedCandleData.length > 0) {
+              const latestCandle = formattedCandleData[formattedCandleData.length - 1]; // Will be the only candle from limit=1
+              const latestVolume = volumeData[volumeData.length - 1];
+
+              // Only attempt to get latest SMA if data is available for that period
+              const latestSma20 = formattedSma20Data.length > 0 ? formattedSma20Data[formattedSma20Data.length - 1] : undefined;
+              const latestSma50 = formattedSma50Data.length > 0 ? formattedSma50Data[formattedSma50Data.length - 1] : undefined;
+              const latestSma200 = formattedSma200Data.length > 0 ? formattedSma200Data[formattedSma200Data.length - 1] : undefined;
+
+              const currentCandleData = candlestickSeries.data();
+              const lastKnownCandleInSeries = currentCandleData.length > 0 ? currentCandleData[currentCandleData.length - 1] : undefined;
+
+              // Check if it's a new candle or an update to the existing last candle
+              if (!lastKnownCandleInSeries || latestCandle.time > lastKnownCandleInSeries.time) {
+                // New candle, update (which will append it)
+                candlestickSeries.update(latestCandle);
+                volumeSeries.update(latestVolume);
+                if (latestSma20) sma20Series.update(latestSma20);
+                if (latestSma50) sma50Series.update(latestSma50);
+                if (latestSma200) sma200Series.update(latestSma200);
+              } else if (latestCandle.time === lastKnownCandleInSeries.time) {
+                // Same candle, check if values have changed before updating
+                const hasCandleChanged = 
+                  latestCandle.open !== lastKnownCandleInSeries.open ||
+                  latestCandle.high !== lastKnownCandleInSeries.high ||
+                  latestCandle.low !== lastKnownCandleInSeries.low ||
+                  latestCandle.close !== lastKnownCandleInSeries.close;
+
+                const currentVolumeData = volumeSeries.data();
+                const lastKnownVolumeInSeries = currentVolumeData.length > 0 ? currentVolumeData[currentVolumeData.length - 1] : undefined;
+                const hasVolumeChanged = !lastKnownVolumeInSeries || latestVolume.value !== lastKnownVolumeInSeries.value;
+
+                const currentSma20Data = sma20Series.data();
+                const lastKnownSma20InSeries = currentSma20Data.length > 0 ? currentSma20Data[currentSma20Data.length - 1] : undefined;
+                const hasSma20Changed = latestSma20?.value !== lastKnownSma20InSeries?.value;
+
+                const currentSma50Data = sma50Series.data();
+                const lastKnownSma50InSeries = currentSma50Data.length > 0 ? currentSma50Data[currentSma50Data.length - 1] : undefined;
+                const hasSma50Changed = latestSma50?.value !== lastKnownSma50InSeries?.value;
+
+                const currentSma200Data = sma200Series.data();
+                const lastKnownSma200InSeries = currentSma200Data.length > 0 ? currentSma200Data[currentSma200Data.length - 1] : undefined;
+                const hasSma200Changed = latestSma200?.value !== lastKnownSma200InSeries?.value;
+
+                if (hasCandleChanged || hasVolumeChanged || hasSma20Changed || hasSma50Changed || hasSma200Changed) {
+                  candlestickSeries.update(latestCandle);
+                  volumeSeries.update(latestVolume);
+                  if (latestSma20) sma20Series.update(latestSma20);
+                  if (latestSma50) sma50Series.update(latestSma50);
+                  if (latestSma200) sma200Series.update(latestSma200);
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error in fetchData:", error);
       }
     };
 
     // Initial data fetch
-    fetchData();
-
-    // Set up periodic updates
-    const updateInterval = setInterval(fetchData, 5000); // Update every 5 seconds
+    fetchData(false); // Call with false for initial full load
+    
+    // Set up periodic updates using recursive setTimeout
+    let timeoutId: NodeJS.Timeout;
+    const scheduleNextFetch = () => {
+      timeoutId = setTimeout(() => {
+        if (isActive) { // Only schedule next fetch if component is still active
+          fetchData(true); // Call with true for live updates
+          scheduleNextFetch(); // Schedule the next one only after this one completes
+        }
+      }, 15000); // Increased interval to 15 seconds to reduce flickering
+    };
+    scheduleNextFetch(); // Start the first scheduled fetch
 
     // Handle resize
     const handleResize = () => {
-      console.log("TradingChart: Resizing chart");
-      if (chartContainerRef.current) {
-        chart.applyOptions({
+      if (chartContainerRef.current && chartRef.current) {
+        chartRef.current.applyOptions({
           width: chartContainerRef.current.clientWidth,
           height: chartContainerRef.current.clientHeight,
         });
@@ -190,12 +272,15 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
     };
 
     window.addEventListener('resize', handleResize);
-    chartRef.current = chart;
-
+    
     return () => {
+      isActive = false; // Set flag to false on cleanup
       window.removeEventListener('resize', handleResize);
-      clearInterval(updateInterval);
-      chart.remove();
+      clearTimeout(timeoutId); // Use clearTimeout
+      if (chartRef.current) {
+        chartRef.current.remove();
+        chartRef.current = null; 
+      }
     };
   }, [symbol, selectedInterval, onMarketStatsUpdate]);
 

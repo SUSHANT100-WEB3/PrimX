@@ -22,13 +22,12 @@ const INTERVALS = [
 export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMarketStatsUpdate }: TradingChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
-  const [selectedInterval, setSelectedInterval] = useState(interval);
   const lastLoadedSymbolRef = useRef<string | undefined>(undefined);
   const lastLoadedIntervalRef = useRef<string | undefined>(undefined);
 
   // Determine SMA periods based on selected interval
-  const getSmaPeriods = (interval: string) => {
-    switch (interval) {
+  const getSmaPeriods = (currentInterval: string) => {
+    switch (currentInterval) {
       case '1m':
       case '5m':
       case '15m':
@@ -102,21 +101,21 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
     const sma20Series = chart.addSeries(LineSeries, {
       color: '#2962FF',
       lineWidth: 2,
-      title: `SMA ${getSmaPeriods(selectedInterval).sma1}`,
+      title: `SMA ${getSmaPeriods(interval).sma1}`,
     });
 
     // Add 50-period SMA
     const sma50Series = chart.addSeries(LineSeries, {
       color: '#FF6B6B',
       lineWidth: 2,
-      title: `SMA ${getSmaPeriods(selectedInterval).sma2}`,
+      title: `SMA ${getSmaPeriods(interval).sma2}`,
     });
 
     // Add 200-period SMA
     const sma200Series = chart.addSeries(LineSeries, {
       color: '#4CAF50',
       lineWidth: 2,
-      title: `SMA ${getSmaPeriods(selectedInterval).sma3}`,
+      title: `SMA ${getSmaPeriods(interval).sma3}`,
     });
 
     chartRef.current = chart;
@@ -144,7 +143,7 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
 
       try {
         const limit = isLiveUpdate ? 1 : 500; // Fetch only 1 candle for live updates, 500 for initial/symbol/interval change
-        const candleData = await getCandleData(symbol, selectedInterval, limit);
+        const candleData = await getCandleData(symbol, interval, limit);
         const marketStats = await getMarketData(symbol);
         
         if (!isActive || !chartRef.current) {
@@ -157,7 +156,7 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
         }
         
         if (candleData.length > 0) {
-          const { sma1, sma2, sma3 } = getSmaPeriods(selectedInterval);
+          const { sma1, sma2, sma3 } = getSmaPeriods(interval);
 
           const sma20Data = calculateSMA(candleData, sma1);
           const sma50Data = calculateSMA(candleData, sma2);
@@ -196,7 +195,7 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
             // Determine if we should update or set new data
             const isInitialLoadOrSymbolChange = !lastLoadedSymbolRef.current || 
               symbol !== lastLoadedSymbolRef.current || 
-              selectedInterval !== lastLoadedIntervalRef.current;
+              interval !== lastLoadedIntervalRef.current;
 
             if (isInitialLoadOrSymbolChange) {
               candlestickSeries.setData(formattedCandleData);
@@ -205,8 +204,14 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
               sma50Series.setData(formattedSma50Data);
               sma200Series.setData(formattedSma200Data);
               lastLoadedSymbolRef.current = symbol;
-              lastLoadedIntervalRef.current = selectedInterval;
+              lastLoadedIntervalRef.current = interval;
               chartRef.current.timeScale().fitContent(); // Fit content only on initial load or symbol/interval change
+
+              // Update SMA titles when interval or symbol changes
+              sma20Series.applyOptions({ title: `SMA ${sma1}` });
+              sma50Series.applyOptions({ title: `SMA ${sma2}` });
+              sma200Series.applyOptions({ title: `SMA ${sma3}` });
+
             } else if (isLiveUpdate && formattedCandleData.length > 0) {
               const latestCandle = formattedCandleData[formattedCandleData.length - 1]; // Will be the only candle from limit=1
               const latestVolume = volumeData[volumeData.length - 1];
@@ -308,28 +313,13 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
         chartRef.current = null; 
       }
     };
-  }, [symbol, selectedInterval, onMarketStatsUpdate]);
+  }, [symbol, interval, onMarketStatsUpdate]);
 
   return (
     <div className="w-full h-full bg-[#1a1a1a] rounded-lg p-4">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
           <span className="text-2xl font-bold text-white">{symbol}</span>
-        </div>
-        <div className="flex space-x-2">
-          {INTERVALS.map(({ label, value }) => (
-            <button
-              key={value}
-              onClick={() => setSelectedInterval(value)}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                selectedInterval === value
-                  ? 'bg-green-500 text-black'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
         </div>
       </div>
       <div ref={chartContainerRef} className="w-full h-full" />

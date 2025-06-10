@@ -28,6 +28,7 @@ export default function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [selectedTab, setSelectedTab] = useState('chart'); // 'chart' or 'indicators'
+  const [pageSelectedInterval, setPageSelectedInterval] = useState('1d'); // New state for selected interval in page.tsx
   const [rsi7, setRsi7] = useState<number | null>(null);
   const [rsi14, setRsi14] = useState<number | null>(null);
   const [rsi25, setRsi25] = useState<number | null>(null);
@@ -51,7 +52,7 @@ export default function LandingPage() {
 
   useEffect(() => {
     const fetchAndCalculateIndicators = async () => {
-      const candleData: CandleData[] = await getCandleData(selectedSymbol, '1d'); // Fetch daily candle data
+      const candleData: CandleData[] = await getCandleData(selectedSymbol, pageSelectedInterval); // Use pageSelectedInterval
 
       if (candleData.length > 0) {
         const latestClosePrice = candleData[candleData.length - 1].close;
@@ -80,7 +81,7 @@ export default function LandingPage() {
     fetchAndCalculateIndicators();
     const indicatorUpdateInterval = setInterval(fetchAndCalculateIndicators, 30000); // Update every 30 seconds
     return () => clearInterval(indicatorUpdateInterval);
-  }, []);
+  }, [selectedSymbol, pageSelectedInterval]); // Add pageSelectedInterval to dependencies
 
   const stats = [
     { value: '368K+', label: 'Active Traders' },
@@ -369,7 +370,7 @@ export default function LandingPage() {
 
             {selectedTab === 'chart' && (
               <div className="h-64 sm:h-80 md:h-96 lg:h-[500px] w-full">
-                <TradingChart symbol={selectedSymbol} onMarketStatsUpdate={handleMarketStatsUpdate} />
+                <TradingChart symbol={selectedSymbol} interval={pageSelectedInterval} onMarketStatsUpdate={handleMarketStatsUpdate} />
               </div>
             )}
 

@@ -46,6 +46,10 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
         timeVisible: true,
         secondsVisible: false,
         borderColor: '#2B2B43',
+        tickMarkFormatter: (time: number) => {
+          const date = new Date(time * 1000);
+          return date.toLocaleDateString();
+        },
       },
       rightPriceScale: {
         borderColor: '#2B2B43',
@@ -257,7 +261,7 @@ export default function TradingChart({ symbol = 'BTCUSDT', interval = '1h', onMa
           fetchData(true); // Call with true for live updates
           scheduleNextFetch(); // Schedule the next one only after this one completes
         }
-      }, 15000); // Increased interval to 15 seconds to reduce flickering
+      }, 2000); // Changed interval to 2 seconds for more frequent updates
     };
     scheduleNextFetch(); // Start the first scheduled fetch
 

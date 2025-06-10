@@ -24,7 +24,7 @@ export async function getCandleData(symbol: string, interval: string, limit: num
     const data = await response.json();
 
     const rawCandleData = data.map((candle: any[]) => ({
-      time: candle[0],
+      time: candle[0] / 1000, // Convert milliseconds to seconds for Unix timestamp
       open: parseFloat(candle[1]),
       high: parseFloat(candle[2]),
       low: parseFloat(candle[3]),
